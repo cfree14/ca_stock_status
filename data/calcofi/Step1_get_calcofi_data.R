@@ -15,11 +15,10 @@ rawdir <- "data/calcofi/raw"
 outdir <- "data/calcofi/processed"
 plotdir <- "data/calcofi/figures"
 
-# Read keys
+# Read station key
 station_key_orig <- readRDS(file=file.path(outdir, "calcofi_stations.Rds"))
 station_key <- station_key_orig %>% 
-  select(line, station, type) %>% 
-  rename(survey=type)
+  select(line, station, survey)
 
 
 # Get data
@@ -31,34 +30,122 @@ station_key <- station_key_orig %>%
 # CalCOFI NOAA Fish Larvae Counts
 # https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIlrvcnt.html
 
-# Dataset info
-dataset_info <- rerddap::info('erdCalCOFIlrvcnt', url = "https://coastwatch.pfeg.noaa.gov/erddap/")
-towtype_info <-  rerddap::info('erdCalCOFItowtyp', url = "https://coastwatch.pfeg.noaa.gov/erddap/") 
-station_info <-  rerddap::info('erdCalCOFIstns', url = "https://coastwatch.pfeg.noaa.gov/erddap/") 
-tow_info <-  rerddap::info('erdCalCOFItows', url = "https://coastwatch.pfeg.noaa.gov/erddap/") 
+# Get?
+get <- F
+if(get==T){
 
-# Station key
-station_orig <- rerddap::tabledap(x=station_info, 
-                                  url="https://coastwatch.pfeg.noaa.gov/erddap/", 
-                                  fmt="csv") 
+  # Dataset info
+  dataset_info <- rerddap::info('erdCalCOFIlrvcnt', url = "https://coastwatch.pfeg.noaa.gov/erddap/")
+  towtype_info <-  rerddap::info('erdCalCOFItowtyp', url = "https://coastwatch.pfeg.noaa.gov/erddap/") 
+  station_info <-  rerddap::info('erdCalCOFIstns', url = "https://coastwatch.pfeg.noaa.gov/erddap/") 
+  tow_info <-  rerddap::info('erdCalCOFItows', url = "https://coastwatch.pfeg.noaa.gov/erddap/") 
+  
+  # Station key
+  stations_orig <- rerddap::tabledap(x=station_info, 
+                                    url="https://coastwatch.pfeg.noaa.gov/erddap/") # fmt="csv"
+  
+  # Tow type key
+  towtypes_orig <- rerddap::tabledap(x=towtype_info, 
+                                    url="https://coastwatch.pfeg.noaa.gov/erddap/") 
+  
+  # Tow  key
+  tows_orig <- rerddap::tabledap(x=tow_info,
+                                url="https://coastwatch.pfeg.noaa.gov/erddap/")
+  
+  # Download table data
+  data_orig <- rerddap::tabledap(x=dataset_info, 
+                                 url="https://coastwatch.pfeg.noaa.gov/erddap/") 
+  
+  
+  # Export
+  saveRDS(data_orig, file=file.path(rawdir, "calcofi_fish_larvae_counts_raw.Rds"))
+  saveRDS(tows_orig, file=file.path(rawdir, "calcofi_fish_larvae_tows_raw.Rds"))
+  saveRDS(towtypes_orig, file=file.path(rawdir, "calcofi_fish_larvae_tow_type_raw.Rds"))
+  saveRDS(stations_orig, file=file.path(rawdir, "calcofi_fish_larvae_stations_raw.Rds"))
 
-# Tow type key
-towtype_orig <- rerddap::tabledap(x=towtype_info, 
-                               url="https://coastwatch.pfeg.noaa.gov/erddap/", 
-                               fmt="csv") 
+}else{
+  
+  # Read data
+  data_orig <- readRDS(file=file.path(rawdir, "calcofi_fish_larvae_counts_raw.Rds"))
+  tows_orig <- readRDS(file=file.path(rawdir, "calcofi_fish_larvae_tows_raw.Rds"))
+  towtypes_orig <- readRDS(file=file.path(rawdir, "calcofi_fish_larvae_tow_type_raw.Rds"))
+  stations_orig <- readRDS(file=file.path(rawdir, "calcofi_fish_larvae_stations_raw.Rds"))
+  
+}
 
-# Tow  key
-tow_orig <- rerddap::tabledap(x=tow_info, 
-                              url="https://coastwatch.pfeg.noaa.gov/erddap/", 
-                              fmt="csv") 
 
-# Download table data
-data_orig <- rerddap::tabledap(x=dataset_info, 
-                               url="https://coastwatch.pfeg.noaa.gov/erddap/", 
-                               fmt="csv") 
+
+# Format tows
+################################################################################
+
+# Format tows
+tows <- tows_orig %>% 
+  # Rename
+  rename(lat_dd=latitude,
+         long_dd=longitude,
+         tow_type_code=tow_type, 
+         time1=time,
+         time2=end_time) %>%
+  # Add date
+  mutate(date1=substr(time1, 1, 10) %>% lubridate::ymd(),
+         date2=substr(time2, 1, 10) %>% lubridate::ymd(),
+         year=lubridate::year(date1)) %>% 
+  # Add tow type
+  mutate(tow_type=recode(tow_type_code,
+                         "C1"="CalCOFI 1-meter oblique tow",     
+                         "CB"="CalCOFI oblique bongo tow",     
+                         "CV"="CalCOFI vertical egg tow",      
+                         "DC"="Oblique tow to 600 m using the CB net (historically used to sample sablefish)",      
+                         "MT"="Twin winged continuous-flow surface tow",      
+                         "PV"="Paired tows of CalCOFI vertical egg net")) %>% 
+  # Add survey type
+  left_join(station_key) %>% 
+  # Build tow id
+  mutate(tow_id=paste(year, cruise, ship_code, line, station, order_occupied,
+                      tow_type_code, net_location, tow_number, sep="-")) %>% 
+  # Arrange
+  select(tow_id, year, date1, time1, date2, time2, 
+         cruise, ship, ship_code,
+         survey, order_occupied, line, station, lat_dd, long_dd,
+         tow_type_code, tow_type, net_location, mesh_size, tow_number,
+         standard_haul_factor, volume_sampled, proportion_sorted,, everything())
+
+# Inspect
+freeR::complete(tows)
+
+# Unique id?
+freeR::which_duplicated(tows$tow_id)
+
+# Add UTM coordinates
+#################################
+
+# Convert to sf object with WGS84 (EPSG:4326)
+tows_sf <- sf::st_as_sf(tows, coords = c("long_dd", "lat_dd"), crs = 4326)
+
+# Transform to UTM Zone 11N (EPSG:32611)
+tows_sf_utm <- sf::st_transform(tows_sf, crs = 32611)
+
+# Extract UTM coordinates
+utm11_easting <- sf::st_coordinates(tows_sf_utm)[, 1]
+utm11_northing <- sf::st_coordinates(tows_sf_utm)[, 2]
+
+# Record
+tows1 <- tows %>% 
+  # Add UTM10N coordinates
+  mutate(lat_utm11n=utm11_northing,
+         long_utm11n=utm11_easting) %>% 
+  # Arrange
+  select(tow_id, year, date1, time1, date2, time2, 
+         cruise, ship, ship_code,
+         survey, order_occupied, line, station, lat_dd, long_dd,
+         lat_utm11n, long_utm11n,
+         everything())
 
 # Export
-#saveRDS(data_orig, file=file.path(rawdir, "calcofi_fish_larvae_counts_raw.Rds"))
+#################################
+
+# Export
+saveRDS(tows1, file=file.path(outdir, "calcofi_fish_larvae_tows.Rds"))
 
 
 # Format data
@@ -74,6 +161,10 @@ data <- data_orig %>%
          lat_dd=latitude,
          long_dd=longitude,
          tow_type_code=tow_type) %>% 
+  # Format date
+  mutate(time1=lubridate::ymd_hms(time),
+         date=substr(time, 1, 10) %>% lubridate::ymd(),
+         year=lubridate::year(date)) %>%
   # Add tow type
   mutate(tow_type=recode(tow_type_code,
                          "C1"="CalCOFI 1-meter oblique tow",     
@@ -82,17 +173,16 @@ data <- data_orig %>%
                          "DC"="Oblique tow to 600 m using the CB net (historically used to sample sablefish)",      
                          "MT"="Twin winged continuous-flow surface tow",      
                          "PV"="Paired tows of CalCOFI vertical egg net")) %>% 
-  # Format date
-  mutate(time1=lubridate::ymd_hms(time),
-         date=substr(time, 1, 10) %>% lubridate::ymd(),
-         year=lubridate::year(date)) %>% 
   # Add survey type
   left_join(station_key) %>% 
+  # Build tow id
+  mutate(tow_id=paste(year, cruise, ship_code, line, station, order_occupied,
+                      tow_type_code, net_location, tow_number, sep="-")) %>% 
   # Arrange
   select(year, date, time, time1, 
          cruise, ship, ship_code,
          survey, order_occupied, line, station, lat_dd, long_dd,
-         tow_type_code, tow_type, net_location, tow_number,
+         tow_type_code, tow_type, net_location, tow_number, tow_id,
          comm_name, sci_name, spp_code_calcofi, spp_code_itis,
          standard_haul_factor, volume_sampled, proportion_sorted,
          larvae_count, larvae_10m2, larvae_100m3,
@@ -121,7 +211,6 @@ table(data$standard_haul_factor)
 tow_type_key <- data %>% 
   count(tow_type_code, tow_type)
 
-# Net location
 
 # Ship key
 ship_key <- data %>% 
@@ -146,11 +235,22 @@ spp_key <- data %>%
          taxa_type=ifelse(nword>1, "species", "general"))
 
 
+
+# Add species info
+################################################################################
+
+# Add species info
+data2 <- data %>% 
+  # Add taxa type
+  left_join(spp_key %>% select(comm_name, sci_name, taxa_type)) %>% 
+  # Move
+  relocate(taxa_type, .before=comm_name)
+
 # Export data
 ################################################################################
 
 # Export
-saveRDS(data_orig, file=file.path(rawdir, "calcofi_fish_larvae_counts_raw.Rds"))
+saveRDS(data2, file=file.path(outdir, "calcofi_fish_larvae_counts.Rds"))
 
 
 # Plot map
