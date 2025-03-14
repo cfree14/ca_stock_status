@@ -141,7 +141,13 @@ data1 <- data %>%
          long_utm11km=long_utm11m/1000) %>% 
   # Add julian day
 <<<<<<< HEAD
+<<<<<<< HEAD
   mutate(yday=yday(date1)) 
+=======
+  mutate(yday=yday(date1)) %>% 
+  # Temporary
+  filter(year>=2000)
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 =======
   mutate(yday=yday(date1)) %>% 
   # Temporary
@@ -204,6 +210,7 @@ ggplot(index, aes(year, est)) +
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 
 # Plot index
@@ -232,12 +239,18 @@ fits <- preds$data
 ################################################################################
 
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
+=======
+# Plot effects
+################################################################################
+
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
 foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclass = "sf")
 usa_utm <- usa %>% sf::st_transform(crs=32611)
 foreign_utm <- foreign %>% sf::st_transform(crs=32611)
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 # Setup theme
 my_theme <-  theme(axis.text=element_text(size=8),
@@ -262,6 +275,10 @@ my_theme <-  theme(axis.text=element_text(size=8),
 # Extract fits
 fits <- preds$data
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
+=======
+# Extract fits
+fits <- preds$data
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 
 # Plot spatial fixed+random effects
 g <- ggplot(data=fits, aes(x= long_utm11m, y= lat_utm11m, fill=exp(est))) +
@@ -269,8 +286,13 @@ g <- ggplot(data=fits, aes(x= long_utm11m, y= lat_utm11m, fill=exp(est))) +
   facet_wrap(~year, ncol=10) +
   # Plot land
 <<<<<<< HEAD
+<<<<<<< HEAD
   # geom_sf(data=foreign_utm, fill="grey70", color="white", lwd=0.2, inherit.aes = F) +
   # geom_sf(data=usa_utm, fill="grey70", color="white", lwd=0.2, inherit.aes = F) +
+=======
+  # geom_sf(data=foreign_utm, fill="grey90", color="white", lwd=0.2, inherit.aes = F) +
+  # geom_sf(data=usa_utm, fill="grey90", color="white", lwd=0.2, inherit.aes = F) +
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 =======
   # geom_sf(data=foreign_utm, fill="grey90", color="white", lwd=0.2, inherit.aes = F) +
   # geom_sf(data=usa_utm, fill="grey90", color="white", lwd=0.2, inherit.aes = F) +
@@ -285,6 +307,7 @@ g <- ggplot(data=fits, aes(x= long_utm11m, y= lat_utm11m, fill=exp(est))) +
                        colors=RColorBrewer::brewer.pal(9, "Spectral") %>% rev()) +
   guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black", frame.linewidth = 0.2)) +
   # Crop
+<<<<<<< HEAD
 <<<<<<< HEAD
   # coord_sf(xlim = range(fits$long_utm11m), ylim = range(fits$lat_utm11m)) +
   # Theme
@@ -345,6 +368,9 @@ g <- ggplot(data=fits, aes(x= long_utm11m, y= lat_utm11m, fill=epsilon_st)) +
 =======
   # coord_sf(xlim = c(-126.5, -116.5), ylim = c(30, 38)) +
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
+=======
+  # coord_sf(xlim = c(-126.5, -116.5), ylim = c(30, 38)) +
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
   # Theme
   theme_bw() + my_theme +
   theme(legend.key.size=unit(0.3, "cm"),
@@ -357,6 +383,10 @@ g
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 =======
 
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd

@@ -90,8 +90,12 @@ tows <- tows_orig %>%
   mutate(date1=substr(time1, 1, 10) %>% lubridate::ymd(),
          date2=substr(time2, 1, 10) %>% lubridate::ymd(),
 <<<<<<< HEAD
+<<<<<<< HEAD
          year=lubridate::year(date1),
          yday=lubridate::yday(date1)) %>% 
+=======
+         year=lubridate::year(date1)) %>% 
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 =======
          year=lubridate::year(date1)) %>% 
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
@@ -110,7 +114,11 @@ tows <- tows_orig %>%
                       tow_type_code, net_location, tow_number, sep="-")) %>% 
   # Arrange
 <<<<<<< HEAD
+<<<<<<< HEAD
   select(tow_id, year, date1, time1, date2, time2, yday,
+=======
+  select(tow_id, year, date1, time1, date2, time2, 
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 =======
   select(tow_id, year, date1, time1, date2, time2, 
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
@@ -141,6 +149,7 @@ utm11_northing <- sf::st_coordinates(tows_sf_utm)[, 2]
 # Record
 tows1 <- tows %>% 
 <<<<<<< HEAD
+<<<<<<< HEAD
   # Add UTM11N coordinates
   mutate(lat_utm11m=utm11_northing,
          long_utm11m=utm11_easting) %>% 
@@ -152,12 +161,21 @@ tows1 <- tows %>%
   mutate(lat_utm11n=utm11_northing,
          long_utm11n=utm11_easting) %>% 
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
+=======
+  # Add UTM10N coordinates
+  mutate(lat_utm11n=utm11_northing,
+         long_utm11n=utm11_easting) %>% 
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
   # Arrange
   select(tow_id, year, date1, time1, date2, time2, 
          cruise, ship, ship_code,
          survey, order_occupied, line, station, lat_dd, long_dd,
 <<<<<<< HEAD
+<<<<<<< HEAD
          lat_utm11m, long_utm11m, long_utm11km, lat_utm11km,
+=======
+         lat_utm11n, long_utm11n,
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 =======
          lat_utm11n, long_utm11n,
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
@@ -201,8 +219,11 @@ data <- data_orig %>%
   mutate(tow_id=paste(year, cruise, ship_code, line, station, order_occupied,
                       tow_type_code, net_location, tow_number, sep="-")) %>% 
 <<<<<<< HEAD
+<<<<<<< HEAD
   # Fill missing common names
   mutate(comm_name=ifelse(comm_name=="", sci_name, comm_name)) %>% 
+=======
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 =======
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
   # Arrange

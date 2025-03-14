@@ -17,10 +17,13 @@ plotdir <- "data/calcofi/figures"
 
 # Read data
 <<<<<<< HEAD
+<<<<<<< HEAD
 stats <- read.csv(file=file.path(outdir, "calcofi_species_to_evaluate.csv"), as.is=T)
 
 
 =======
+=======
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 data_orig <- readRDS(file=file.path(outdir, "calcofi_fish_larvae_counts.Rds"))
 tows_orig <- readRDS(file=file.path(outdir, "calcofi_fish_larvae_tows.Rds"))
 
@@ -61,6 +64,9 @@ stats <- data_orig %>%
 hist(stats$ptows, breaks=seq(0,0.5,0.01))
   
 
+<<<<<<< HEAD
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
+=======
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 # Plot data
 ################################################################################
@@ -79,13 +85,17 @@ my_theme <-  theme(axis.text=element_text(size=8),
                    axis.line = element_line(colour = "black"),
                    # Legend
 <<<<<<< HEAD
+<<<<<<< HEAD
                    legend.position = c(0.8, 0.8),
+=======
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 =======
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
                    legend.key = element_rect(fill = NA, color=NA),
                    legend.background = element_rect(fill=alpha('blue', 0)))
 
 # Plot data
+<<<<<<< HEAD
 <<<<<<< HEAD
 g <- ggplot(stats, aes(y=reorder(comm_name, desc(ptows)), x=ptows, fill=taxa_type)) +
   geom_bar(stat="identity") +
@@ -96,11 +106,16 @@ g <- ggplot(stats, aes(y=reorder(comm_name, desc(ptows)), x=ptows, fill=taxa_typ
   # Legend
   scale_fill_discrete(name="Taxanomic level") +
 =======
+=======
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
 g <- ggplot(stats, aes(y=reorder(comm_name, desc(ptows)), x=ptows)) +
   geom_bar(stat="identity") +
   # Labels
   labs(x="Percent of tows", y="") +
   scale_x_continuous(labels=scales::percent_format()) +
+<<<<<<< HEAD
+>>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
+=======
 >>>>>>> 5db34a8ff2c7c061ab12dad1a5385a02f220d8dd
   # Theme
   theme_bw() + my_theme
