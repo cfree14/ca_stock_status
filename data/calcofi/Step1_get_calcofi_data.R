@@ -240,6 +240,9 @@ spp_key <- data %>%
   mutate(nword=freeR::nwords(sci_name),
          taxa_type=ifelse(nword>1, "species", "general"))
 
+# Export species key
+write.csv(spp_key, file=file.path(outdir, "calcofi_species_key.csv"), row.names=F)
+
 
 
 # Add species info

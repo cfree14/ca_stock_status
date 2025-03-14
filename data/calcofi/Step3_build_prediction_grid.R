@@ -50,17 +50,35 @@ saveRDS(pred_grid, file=file.path(outdir, "calcofi_prediction_grid.Rds"))
 # Plot grid
 ################################################################################
 
-ggplot(pred_grid, aes(x=long_utm11m, y=lat_utm11m)) +
+# Setup theme
+my_theme <-  theme(axis.text=element_text(size=8),
+                   axis.title=element_blank(),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5),
+                   # Gridlines
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key = element_rect(fill = NA, color=NA),
+                   legend.background = element_rect(fill=alpha('blue', 0)))
+
+# Plot
+g <- ggplot(pred_grid, aes(x=long_utm11m, y=lat_utm11m)) +
   # Plot land
   geom_sf(data=foreign, fill="grey90", color="white", lwd=0.3, inherit.aes = F) +
   geom_sf(data=usa, fill="grey90", color="white", lwd=0.3, inherit.aes = F) +
   # Plot grid
-  geom_tile() +
+  geom_tile(fill="red") +
   # Labels
   labs(x="", y="") +
   # Crop
   coord_sf(xlim = range(pred_grid$long_utm11m), ylim = range(pred_grid$lat_utm11m)) +
   # Theme
-  theme_bw()
+  theme_bw() + my_theme
+g
 
+# Export
+ggsave(g, filename=file.path(plotdir, "FigX_prediction_grid.png"), 
+       width=3.4, height=3.5, units="in", dpi=600)
 

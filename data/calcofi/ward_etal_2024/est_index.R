@@ -30,9 +30,9 @@ pred_grid$yday <- 105 # Apr 15
 #                         save_as = "data/index_data.rds")
 
 githubURL <- ("https://raw.githubusercontent.com/ecosystem-state/ecodata/main/inst/calcofi_index_data.rds")
-download.file(githubURL,"data/index_data.rds", method="curl")
+download.file(githubURL,"data/calcofi/ward_etal_2024/index_data.rds", method="curl")
 
-dat = readRDS("data/index_data.rds")
+dat = readRDS("data/calcofi/ward_etal_2024/index_data.rds")
 for(spp in 1:length(unique(dat$scientific_name))) {
   # fit sdmTMB model
   newdat <- dplyr::filter(dat,

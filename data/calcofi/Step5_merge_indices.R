@@ -39,7 +39,7 @@ data <- data %>%
                         "Pacific hake or whiting"="Pacific hake",
                         "Pacific mackerel (chub mackerel)"="Pacific mackerel",
                         "Pacific sardine (pilchard)"="Pacific sardine",
-                        "Unspecified Teliost"="Unspecified teleost"))
+                        "Unidentified Teliost"="Unidentified teleost"))
 
 # Export
 saveRDS(data, file=file.path(datadir, "calcofi_indices_of_abundance.Rds"))
@@ -86,9 +86,4 @@ g
 # Export plot
 ggsave(g, filename=file.path(plotdir, "FigX_calcofi_abundance_indices.png"), 
        width=6.5, height=5.5, units="in", dpi=600)
-  
-
-
-
-
 

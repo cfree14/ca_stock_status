@@ -24,11 +24,13 @@ stations <- readRDS(file=file.path(datadir, "calcofi_stations.Rds"))
 ################################################################################
 
 # Format
+table(tows_orig$tow_type)
 tows <- tows_orig %>% 
   # Filter to standardized data
   filter(year>=1985 & year<2023) %>% 
   filter(!is.na(survey) & survey=="ROS") %>% 
-  filter(tow_type!="Twin winged continuous-flow surface tow")
+  filter(tow_type=="CalCOFI oblique bongo tow")
+
 
 ggplot(tows, aes(x=yday, y=year, color=tow_type)) +
   geom_point() +

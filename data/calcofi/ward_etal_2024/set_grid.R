@@ -16,9 +16,9 @@ min_n <- 300
 #                         save_as = "data/index_data.rds")
 
 githubURL <- ("https://raw.githubusercontent.com/ecosystem-state/ecodata/main/inst/calcofi_index_data.rds")
-download.file(githubURL,"data/index_data.rds", method="curl")
+download.file(githubURL,"data/calcofi/ward_etal_2024/index_data.rds", method="curl")
 
-dat = readRDS("data/index_data.rds")
+dat = readRDS("data/calcofi/ward_etal_2024/index_data.rds")
 stations <- dat %>% 
   count(line, station)
 
