@@ -50,8 +50,6 @@ g <- ggplot(data, aes(x=year, y=index/1e6)) +
   geom_ribbon(mapping=aes(ymin=index_lo/1e6, ymax=index_hi/1e6), fill="grey80") +
   # Median
   geom_line(linewidth=0.3) +
-  # Plot trend
-  geom_line(data=trends_orig, aes())
   # Labels
   labs(x="Year", y="Index of abundance") +
   # Theme
