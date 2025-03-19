@@ -270,7 +270,7 @@ extract_index <- function(preds){
   species <- preds$species
   
   # Extract index
-  area_km2 <- 40*40
+  area_km2 <- 5*5
   index <- get_index(preds, area = area_km2, bias_correct = TRUE)
   
   # Format index

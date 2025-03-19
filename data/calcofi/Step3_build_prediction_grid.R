@@ -37,11 +37,15 @@ res_m <- res_km * 1000
 
 # Build prediction grid
 pred_grid <- tows_orig %>% 
+  # Simplify
+  select(long_utm11km, lat_utm11km) %>% 
   # Round
   mutate(long_utm11km=floor(long_utm11km/res_km)*res_km,
          lat_utm11km=floor(lat_utm11km/res_km)*res_km,
          long_utm11m=long_utm11km*1000,
-         lat_utm11m=lat_utm11km*1000)
+         lat_utm11m=lat_utm11km*1000) %>% 
+  # Simplify
+  unique()
 
 # Export
 saveRDS(pred_grid, file=file.path(outdir, "calcofi_prediction_grid.Rds"))
