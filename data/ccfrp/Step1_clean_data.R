@@ -23,6 +23,8 @@ spp_orig <- read.csv(file=file.path(indir, "CCFRP_species_table.csv"), na.string
 sites_orig <- read.csv(file=file.path(indir, "CCFRP_location_table.csv"), na.strings = c("", "NA"))
 lengths_orig <- read.csv(file=file.path(indir, "2007_2023_CCFRP_derived_length_table.csv"), na.strings = c("", "NA"))
 
+# To-do list
+# Lots of sites are missing lat/longs
 
 
 # Format species key
@@ -71,12 +73,16 @@ sites <- sites_orig %>%
   rename(mpa_region=region,
          mpa_type=type,
          mpa=name) %>% 
+  # Add MPA region
+  mutate(mpa_region=cut(lat_dd, 
+                        breaks=c(0,34.5, 37.5, 39, 100), 
+                        labels=c("South", "Central", "North Central", "North"))) %>% 
   # Recode MPA region
-  mutate(mpa_region=recode_factor(mpa_region,
-                                  "SCSR"="South",
-                                  "CCSR"="Central", 
-                                  "NCCSR"="North Central",
-                                  "NCSR"="North")) %>% 
+  # mutate(mpa_region=recode_factor(mpa_region,
+  #                                 "SCSR"="South",
+  #                                 "CCSR"="Central", 
+  #                                 "NCCSR"="North Central",
+  #                                 "NCSR"="North")) %>% 
   # Arrange
   select(-c(ltm_project_short_code, ca_mpa_name_short)) %>% 
   select(monitoring_group, area, mpa, mpa_long, mpa_region, mpa_type, everything())
@@ -88,26 +94,30 @@ freeR::which_duplicated(sites$cell_id)
 freeR::complete(sites)
 
 # Inspect more
-table(data$area)
+table(sites$area)
 
+# Export
+saveRDS(sites, file=file.path(outdir, "ccfrp_sites.Rds"))
+
+
+# Plot map
+################################################################################
 
 # Mark MPA shapefile
 mpas <- mpas %>% 
   mutate(ccfrp=ifelse(name %in% sites$mpa, "Monitored", "Unmonitored"))
 
-
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
 foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclass = "sf")
 
-
 # Plot map
-ggplot(sites, aes(x=long_dd, y=lat_dd)) +
+ggplot(sites, aes(x=long_dd, y=lat_dd, color=mpa_region)) +
   # Plot land
   geom_sf(data=foreign, fill="grey90", color="white", lwd=0.3, inherit.aes = F) +
   geom_sf(data=usa, fill="grey90", color="white", lwd=0.3, inherit.aes = F) +
   # Plot MPAs
-  geom_sf(data=mpas,fill="red", color=NA, inherit.aes = F) + # mapping=aes(fill=ccfrp),
+  # geom_sf(data=mpas,fill="red", color=NA, inherit.aes = F) + # mapping=aes(fill=ccfrp),
   # Plot sites
   geom_point() +
   # Legend
@@ -199,6 +209,8 @@ freeR::complete(data)
 # Inspect
 table(data$area)
 
+# Export
+saveRDS(data, file=file.path(outdir, "ccfrp_catch_data.Rds"))
 
 
 # Survey key
@@ -223,6 +235,8 @@ str(surveys)
 freeR::complete(surveys)
 
 
+# Export
+saveRDS(surveys, file=file.path(outdir, "ccfrp_surveys.Rds"))
 
 
 # Temporal coverage
