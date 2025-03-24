@@ -17,6 +17,9 @@ indir <- "data/kelp_scuba/raw"
 outdir <- "data/kelp_scuba/processed"
 plotdir <- "data/kelp_scuba/figures"
 
+# Downloaded from:
+# https://opc.dataone.org/view/doi%3A10.25494%2FP6%2FMLPA_kelpforest.9
+
 # Algae/inverts
 upc_orig <- read.csv(file=file.path(indir, "MLPA_kelpforest_upc.6.csv"), na.strings = c("", "NA")) # benthic algae/invertebrates
 swath_orig <- read.csv(file=file.path(indir, "MLPA_kelpforest_swath.7.csv"), na.strings = c("", "NA")) # benthic algae/invertebrates
@@ -36,7 +39,7 @@ lengths_orig <- read.csv(file=file.path(indir, "MLPA_kelpforest_sizefreq.6.csv")
 ################################################################################
 
 # Species key
-spp <- spp_orig %>% 
+spp_full <- spp_orig %>% 
   # Rename
   janitor::clean_names("snake") %>% 
   rename(comm_name=common_name,
@@ -45,20 +48,23 @@ spp <- spp_orig %>%
   mutate(comm_name=stringr::str_to_sentence(comm_name))
 
 # Inspect
-freeR::complete(spp)
+freeR::complete(spp_full)
 
-# Confirm unique id
-freeR::which_duplicated(spp$species_code)
+# Confirm unique id - not remotely
+freeR::which_duplicated(spp_full$classcode)
 
 # Simple species key
-spp_simple <- spp %>% 
+spp_simple <- spp_full %>% 
   filter(sample_type=="FISH") %>% 
   select(classcode, sci_name, comm_name) %>% 
   unique()
 
+# Confirm unique id
 freeR::which_duplicated(spp_simple$classcode)
 freeR::which_duplicated(spp_simple$sci_name)
 
+# Export
+saveRDS(spp_simple, file=file.path(outdir, "species.Rds"))
 
 
 # Format site key
@@ -92,7 +98,7 @@ range(sites$survey_year)
 table(sites$mpa_type)
 
 # Simple site
-site_key_use <- sites %>% 
+site_key_use1 <- sites %>% 
   # Unique fish survey sites
   filter(grepl("FISH", method)) %>% 
   select(campus, method, survey_year, site, lat_dd, long_dd) %>% 
@@ -102,6 +108,17 @@ site_key_use <- sites %>%
   summarise(n=n(),
             lat_dd=mean(lat_dd),
             long_dd=mean(long_dd)) %>% 
+  ungroup()
+site_key_use2 <- sites %>% 
+  # Unique fish survey sites
+  filter(grepl("FISH", method)) %>% 
+  select(campus, method, survey_year, site, lat_dd, long_dd) %>% 
+  unique() %>% 
+  # Compute average since there are sometimes different GPS coords for a site
+  group_by(campus, method, site) %>% 
+  summarise(n=n(),
+            lat_dd2=mean(lat_dd),
+            long_dd2=mean(long_dd)) %>% 
   ungroup()
 
 
@@ -159,10 +176,13 @@ data <- fish_orig %>%
   # Add species info
   left_join(spp_simple, by="classcode") %>% 
   # Add site info
-  left_join(site_key_use %>% select(-n), by=c("campus", "method", "survey_year", "site")) %>% 
+  left_join(site_key_use1 %>% select(-n), by=c("campus", "method", "survey_year", "site")) %>%
+  # Add transect id
+  mutate(survey_id=paste(date, site, sep="-"),
+         transect_id=paste(date, site, zone, level, transect, sep="-")) %>%
   # Arrange
   select(campus, method, survey_year, year, month, day, date, yday, 
-         site, site_old, zone, level, transect, lat_dd, long_dd, 
+         site, site_old, zone, level, transect, survey_id, transect_id, lat_dd, long_dd, 
          depth_m, visibility_m, temp_c, surge, kelp_coverage_code, observer,
          classcode, comm_name, sci_name, count, 
          length_cm, length_cm_min, length_cm_max, sex, notes,
@@ -194,6 +214,9 @@ table(data$level)
 table(data$observer)
 table(data$surge)
 
+# Export data
+saveRDS(data, file=file.path(outdir, "data.Rds"))
+
 
 # Transect key
 ################################################################################
@@ -202,15 +225,16 @@ table(data$surge)
 transects <- data %>% 
   # Reduce to unique transects
   select(campus:observer) %>% 
-  unique() %>% 
-  # Add transect id
-  mutate(transect_id=paste(campus, date, site, zone, transect, sep="-"))
+  unique()
 
+# Confirm transect ids are unique
 freeR::which_duplicated(transects$transect_id)  
 
+# Export
+saveRDS(transects, file=file.path(outdir, "transects.Rds"))
 
 
-
+# If zone depth is less than 6m and there is a canopy transect, delete midwater
 
 
 
