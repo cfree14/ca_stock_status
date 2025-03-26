@@ -24,14 +24,37 @@ catch_orig <- readRDS(file=file.path(outdir, "GBTS_catch.Rds"))
 
 # Subset hauls
 hauls <- hauls_orig %>% 
+  # Filter
   filter(project=="Groundfish Slope and Shelf Combination Survey") %>% 
   filter(performance=="Satisfactory") %>% 
-  mutate(date_dummy=paste("2000", month(date), day(date), sep="-") %>% ymd())
+  # Add date dummy
+  mutate(yday=yday(date),
+         pass=case_when(yday<220 & year>=2004 ~ "Summer",
+                        yday<230 & year==2003 ~ "Summer",
+                        T ~ "Fall") %>% factor(., levels=c("Summer", "Fall")),
+         date_dummy=paste("2000", month(date), day(date), sep="-") %>% ymd()) %>% 
+  # Arrange
+  relocate(pass, .before=date) %>% 
+  select(program:date, date_dummy, yday, everything())
+
+# Check pass work
+g <- ggplot(hauls, aes(x=yday, y=year, color=pass)) +
+  geom_point(size=0.5) +
+  # Labels
+  labs(x="Day of year", y="Year") +
+  scale_y_reverse(breaks=seq(2002, 2026, 2)) +
+  # Theme
+  theme_bw()
+g
 
 # Subset catch
 catch <- catch_orig %>% 
   filter(project=="Groundfish Slope and Shelf Combination Survey") %>% 
   filter(performance=="Satisfactory")
+
+# Export data
+saveRDS(hauls, file=file.path(outdir, "GBTS_hauls_use.Rds"))
+saveRDS(catch, file=file.path(outdir, "GBTS_catch_use.Rds"))
 
 
 # Subset data
@@ -76,6 +99,8 @@ spp_key_use1 <- spp_key_use %>%
   left_join(taxa, by=c("sci_name"="sciname")) %>% 
   filter(type=="fish")
 
+# Export
+saveRDS(spp_key_use1, file=file.path(outdir, "GBTS_species_to_evaluate.Rds"))
 
 
 # Species
@@ -131,13 +156,16 @@ ggsave(g, filename=file.path(plotdir, "FigX_gbts_spatiotemporal_coverage.png"),
        width=6.5, height=3.5, units="in", dpi=600)
 
 
-g <- ggplot(hauls, aes(x=date_dummy, y=year)) +
+g <- ggplot(hauls, aes(x=date_dummy, y=year, color=pass)) +
   geom_point(size=0.5) +
   # Labels
   labs(x="Day of year", y="Year") +
   scale_y_reverse(breaks=seq(2002, 2026, 2)) +
+  # Legend
+  scale_color_discrete(name="Pass") +
   # Theme
-  theme_bw() + base_theme
+  theme_bw() + base_theme + 
+  theme(legend.position="top")
 g
 
 # Export figure
