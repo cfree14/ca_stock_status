@@ -39,12 +39,18 @@ stats <- catch_orig %>%
   group_by(spp_code, comm_name, sci_name, maturity_code) %>% 
   summarize(nyrs=n_distinct(year),
             ntows=n()) %>% 
+  ungroup() %>% 
   # Filter
   filter(nyrs>25 & ntows>250) %>% 
   # Compute percent of tows
   mutate(ptows=ntows/ntows_tot) %>% 
   # Add common name long
-  mutate(comm_name_long=ifelse(maturity_code=="A", paste(comm_name, "(adults)"), comm_name))
+  mutate(comm_name_long=ifelse(maturity_code=="A", paste(comm_name, "(adults)"), comm_name)) %>% 
+  # Mark level
+  mutate(level=ifelse(freeR::nwords(sci_name)==1, "group", "species")) %>% 
+  filter(level!="group")
+
+freeR::check_names(stats$sci_name)
 
 # Plot data
 ggplot(stats, aes(y=reorder(comm_name_long, desc(ptows)), x=ptows, fill=maturity_code)) +
@@ -56,6 +62,8 @@ ggplot(stats, aes(y=reorder(comm_name_long, desc(ptows)), x=ptows, fill=maturity
   theme_bw()
 
 # Export
+saveRDS(stats, file=file.path(outdir, "RREAS_species_to_evaluate.Rds"))
+
 
 
 # Build data

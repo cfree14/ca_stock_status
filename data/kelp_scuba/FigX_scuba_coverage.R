@@ -18,9 +18,9 @@ outdir <- "data/kelp_scuba/processed"
 plotdir <- "data/kelp_scuba/figures"
 
 # Read data
-spp_orig <- readRDS(file=file.path(outdir, "species.Rds"))
-data_orig <- readRDS(file=file.path(outdir, "data.Rds"))
-transect_orig <- readRDS(file=file.path(outdir, "transects.Rds"))
+spp_orig <- readRDS(file=file.path(outdir, "scuba_species.Rds"))
+data_orig <- readRDS(file=file.path(outdir, "scuba_data.Rds"))
+transect_orig <- readRDS(file=file.path(outdir, "scuba_transects.Rds"))
 
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
@@ -36,6 +36,8 @@ sites <- transect_orig %>%
   summarize(lat_dd=mean(lat_dd),
             long_dd=mean(long_dd),
             nyrs=n_distinct(survey_year))
+
+# Check unique
 freeR::which_duplicated(sites$site)
 
 # Summarize surveys
@@ -46,9 +48,9 @@ surveys <- transect_orig %>%
   mutate(campus=factor(campus, levels=c("VRG", "UCSB", "UCSC", "HSU") %>% rev())) %>% 
   arrange(campus, desc(lat_dd)) %>% 
   mutate(date_dummy=paste("2000", month(date), day(date), sep="-") %>% ymd())
+
+# Check unique
 freeR::which_duplicated(surveys$survey_id)
-
-
 
 
 # Spatial coverage
@@ -147,10 +149,12 @@ ggsave(g, filename=file.path(plotdir, "FigX_kelp_scuba_seasonality.png"),
 # Species coverage
 ################################################################################
 
-# Species stats
+# Criteria
 range(data_orig$year)
 length(2008:2023)
 14/16
+
+# Species stats
 stats <- data_orig %>% 
   # Filter
   filter(year>=2008 & yday>=182) %>% 
@@ -163,9 +167,16 @@ stats <- data_orig %>%
   # Proportion
   mutate(psurveys=nsurveys/n_distinct(transect_orig$survey_id),
          ptransects=ntransects/n_distinct(transect_orig$transect_id)) %>% 
-  # Filter
+  # Remove species with insuffient info
   filter(nyr>=14) %>% 
+  # Remove bad species
   filter(!comm_name %in% c("No organisms present in this sample") & !grepl("young of| or |,", comm_name))
+
+freeR::check_names(stats$sci_name)
+
+# Export 
+saveRDS(stats, file=file.path(outdir, "scuba_species_to_evaluate.Rds"))
+
 
 # Plot data
 g <- ggplot(stats, aes(y=reorder(comm_name, desc(psurveys)), x=psurveys)) +
@@ -180,7 +191,6 @@ g <- ggplot(stats, aes(y=reorder(comm_name, desc(psurveys)), x=psurveys)) +
   theme(axis.text = element_text(size=7),
         axis.title = element_text(size=8))
 g
-
 
 # Export figure
 ggsave(g, filename=file.path(plotdir, "FigX_kelp_scuba_species.png"), 

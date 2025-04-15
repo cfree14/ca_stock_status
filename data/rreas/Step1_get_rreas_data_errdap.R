@@ -76,6 +76,8 @@ catch <- catch_orig %>%
                          "A"="Adult")) %>% 
   # Format common name
   mutate(comm_name=stringr::str_to_sentence(comm_name)) %>% 
+  # Format sci name
+  mutate(sci_name=stringr::str_squish(sci_name)) %>% 
   # Recode missing GPS points
   mutate(lat_dd=ifelse(lat_dd==0, station_lat_dd, lat_dd),
          long_dd=ifelse(long_dd==0, station_long_dd, long_dd)) %>% 
@@ -131,6 +133,8 @@ species_key <- catch %>%
 
 # Check for duplicates
 freeR::which_duplicated(species_key$spp_code)
+
+freeR::check_names(species_key$sci_name)
 
 # Export
 saveRDS(species_key, file=file.path(outdir, "RREAS_species_key.Rds"))

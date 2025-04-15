@@ -45,7 +45,11 @@ spp_full <- spp_orig %>%
   rename(comm_name=common_name,
          sci_name=species_definition) %>% 
   # Format common name
-  mutate(comm_name=stringr::str_to_sentence(comm_name))
+  mutate(comm_name=stringr::str_to_sentence(comm_name)) %>% 
+  # Format some scientific names
+  mutate(sci_name=recode(sci_name, 
+                         "Cephaloscyllium ventriosum EGG"="Cephaloscyllium ventriosum",
+                         "Sarda chiliensis chiliensis"="Sarda chiliensis"))
 
 # Inspect
 freeR::complete(spp_full)
@@ -63,8 +67,12 @@ spp_simple <- spp_full %>%
 freeR::which_duplicated(spp_simple$classcode)
 freeR::which_duplicated(spp_simple$sci_name)
 
+# Check names
+freeR::check_names(spp_simple$sci_name)
+
+
 # Export
-saveRDS(spp_simple, file=file.path(outdir, "species.Rds"))
+saveRDS(spp_simple, file=file.path(outdir, "scuba_species.Rds"))
 
 
 # Format site key
@@ -109,6 +117,7 @@ site_key_use1 <- sites %>%
             lat_dd=mean(lat_dd),
             long_dd=mean(long_dd)) %>% 
   ungroup()
+
 site_key_use2 <- sites %>% 
   # Unique fish survey sites
   filter(grepl("FISH", method)) %>% 
@@ -215,7 +224,7 @@ table(data$observer)
 table(data$surge)
 
 # Export data
-saveRDS(data, file=file.path(outdir, "data.Rds"))
+saveRDS(data, file=file.path(outdir, "scuba_data.Rds"))
 
 
 # Transect key
@@ -231,7 +240,7 @@ transects <- data %>%
 freeR::which_duplicated(transects$transect_id)  
 
 # Export
-saveRDS(transects, file=file.path(outdir, "transects.Rds"))
+saveRDS(transects, file=file.path(outdir, "scuba_transects.Rds"))
 
 
 # If zone depth is less than 6m and there is a canopy transect, delete midwater
