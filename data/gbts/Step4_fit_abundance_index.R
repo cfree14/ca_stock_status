@@ -22,7 +22,11 @@ plotdir <- "data/gbts/figures/detailed"
 # Read data
 hauls <- readRDS(file=file.path(outdir, "GBTS_hauls_use.Rds"))
 catch <- readRDS(file=file.path(outdir, "GBTS_catch_use.Rds"))
-species <- readRDS(file=file.path(outdir, "GBTS_species_to_evaluate.Rds"))
+species <- readRDS(file=file.path(outdir, "GBTS_species_to_evaluate.Rds")) %>% 
+  arrange(desc(ptows))
+
+# Trawl grid cells
+cells_orig <- readRDS("/Users/cfree/Dropbox/Chris/UCSB/projects/dcrab_multistressor/data/trawl_survey/processed/nwfsc_wcbts_grid_cells.Rds")
 
 # Source code
 source("data/gbts/helper_functions.R")
@@ -36,35 +40,59 @@ hauls_utm <- sdmTMB::add_utm_columns(dat = hauls,
                                      units="km")
 
 # Build mesh
-mesh <- sdmTMB::make_mesh(hauls_utm, c("long_utm11km", "lat_utm11km"), cutoff = 50)
+mesh <- sdmTMB::make_mesh(hauls_utm, c("long_utm11km", "lat_utm11km"), cutoff = 10)
 plot(mesh)
+
+
+# Build prediction grid
+################################################################################
+
+pred_grid <- cells_orig %>% 
+  # Centroid
+  sf::st_centroid() %>% 
+  sf::st_coordinates() %>% 
+  # Make dataframe
+  as.data.frame() %>% 
+  rename(long_dd=X, lat_dd=Y) %>% 
+  # Add metadata
+  mutate(centroid_id=cells_orig$centroid_id,
+         station_id=cells_orig$station_id,
+         zone=cells_orig$zone,
+         area_ha=cells_orig$area_ha) %>% 
+  # Add UTM cooridnates
+  sdmTMB::add_utm_columns(dat = ., 
+                          ll_names = c("long_dd", "lat_dd"), 
+                          ll_crs=4326, 
+                          utm_crs = 32611, 
+                          utm_names = c("long_utm11km", "lat_utm11km"),
+                          units="km")
 
 
 # Index package play
 ################################################################################
 
-indexwc_configs <- indexwc::configuration
-indexwc_data <- indexwc_configs |>
-  dplyr::filter(species == "yellowtail rockfish") |>
-  dplyr::filter(source == "NWFSC.Combo" & family == "sdmTMB::delta_gamma()") |>
-  dplyr::filter(
-    formula == "catch_weight ~ 0 + fyear*split_mendocino + pass_scaled"
-  ) |>
-  # Row by row ... do stuff then ungroup
-  dplyr::rowwise() |>
-  # Pull the data based on the function found in fxn column
-  dplyr::mutate(
-    data_raw = list(indexwc::format_data(eval(parse(text = fxn)))),
-    data_filtered = list(data_raw |>
-                           dplyr::filter(
-                             depth <= min_depth, depth >= max_depth,
-                             latitude >= min_latitude, latitude <= max_latitude,
-                             year >= min_year, year <= max_year
-                           ) |>
-                           dplyr::mutate(split_mendocino = ifelse(latitude > 40.1666667, "N", "S")))
-  ) |>
-  dplyr::ungroup()
-indexwc_data_filtered <- indexwc_data$data_filtered[[1]]
+# indexwc_configs <- indexwc::configuration
+# indexwc_data <- indexwc_configs |>
+#   dplyr::filter(species == "yellowtail rockfish") |>
+#   dplyr::filter(source == "NWFSC.Combo" & family == "sdmTMB::delta_gamma()") |>
+#   dplyr::filter(
+#     formula == "catch_weight ~ 0 + fyear*split_mendocino + pass_scaled"
+#   ) |>
+#   # Row by row ... do stuff then ungroup
+#   dplyr::rowwise() |>
+#   # Pull the data based on the function found in fxn column
+#   dplyr::mutate(
+#     data_raw = list(indexwc::format_data(eval(parse(text = fxn)))),
+#     data_filtered = list(data_raw |>
+#                            dplyr::filter(
+#                              depth <= min_depth, depth >= max_depth,
+#                              latitude >= min_latitude, latitude <= max_latitude,
+#                              year >= min_year, year <= max_year
+#                            ) |>
+#                            dplyr::mutate(split_mendocino = ifelse(latitude > 40.1666667, "N", "S")))
+#   ) |>
+#   dplyr::ungroup()
+# indexwc_data_filtered <- indexwc_data$data_filtered[[1]]
 
 
 # Subset data
@@ -81,8 +109,8 @@ species_list <- species$comm_name_orig
 # Loop through species
 i <- 1
 # for(i in 1:length(species_list)){
-results <- foreach(i = 1:length(species_list), 
-                   .packages = c("dplyr", "ggplot2", "sdmTMB")) %dopar% {
+results <- foreach(i = 3:length(species_list), 
+                   .packages = c("dplyr", "ggplot2", "sdmTMB", "tidyr")) %dopar% {
                      
   # Species do
   species_do <- species_list[i]
@@ -93,25 +121,25 @@ results <- foreach(i = 1:length(species_list),
                      catch=catch,
                      species=species_do)
   
-  # # Fit model
-  # model <- fit_model(data=data)
-  # 
-  # # Inspect model (diagnostics)
-  # inspect_model(model)
-  # 
-  # # Make predictions
-  # preds <- make_preds(model, pred_grid)
-  # 
-  # # Extract and visualize index
-  # index <- extract_index(preds)
-  # 
-  # # # Plot spatial random effects
-  # # # plot_spatial_effects(preds)
-  # 
-  # # Save output
-  # output <- list(model, preds, index)
-  # outfile <- species_do %>% tolower(.) %>% gsub(" ", "_", .) %>% paste0(., ".Rds")
-  # saveRDS(output, file.path(outdir, outfile))
+  # Fit model
+  model <- fit_model(data=data)
+
+  # Inspect model (diagnostics)
+  inspect_model(model)
+
+  # Make predictions
+  preds <- make_preds(model, pred_grid)
+
+  # Extract and visualize index
+  index <- extract_index(preds)
+
+  # Plot spatial random effects
+  # plot_spatial_effects(preds)
+
+  # Save output
+  output <- list(model, preds, index)
+  outfile <- species_do %>% tolower(.) %>% gsub(" ", "_", .) %>% paste0(., ".Rds")
+  saveRDS(output, file.path(outdir, outfile))
                      
 }
 

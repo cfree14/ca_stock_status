@@ -34,11 +34,18 @@ lengths_orig <- read.csv(file=file.path(indir, "2007_2023_CCFRP_derived_length_t
 spp <- spp_orig %>% 
   # Rename
   janitor::clean_names("snake") %>% 
-  rename(comm_name=common_name,
+  rename(comm_name_orig=common_name,
          sci_name=scientific_name) %>% 
   # Format common name
-  mutate(comm_name=stringr::str_to_sentence(comm_name)) #%>% 
-  # Format wierd strings
+  mutate(comm_name=stringr::str_to_sentence(comm_name_orig)) %>% 
+  # Format scientific names
+  mutate(sci_name=recode(sci_name, 
+                         "Sebastes dalli"="Sebastes dallii",
+                         "Beringraja stellulata"="Caliraja stellulata",
+                         "Traikis semifasciata"="Triakis semifasciata",
+                         "Xenistius californiensis"="Brachygenys californiensis"))
+
+freeR::check_names(spp$sci_name)
 
 # Inspect
 freeR::complete(spp)
@@ -74,15 +81,20 @@ sites <- sites_orig %>%
          mpa_type=type,
          mpa=name) %>% 
   # Add MPA region
-  mutate(mpa_region=cut(lat_dd, 
-                        breaks=c(0,34.5, 37.5, 39, 100), 
-                        labels=c("South", "Central", "North Central", "North"))) %>% 
+  # mutate(mpa_region=cut(lat_dd, 
+  #                       breaks=c(0,34.5, 37.5, 39, 100), 
+  #                       labels=c("South", "Central", "North Central", "North"))) %>% 
   # Recode MPA region
-  # mutate(mpa_region=recode_factor(mpa_region,
-  #                                 "SCSR"="South",
-  #                                 "CCSR"="Central", 
-  #                                 "NCCSR"="North Central",
-  #                                 "NCSR"="North")) %>% 
+  mutate(mpa_region=recode(mpa_region,
+                          "SCSR"="South",
+                          "CCSR"="Central",
+                          "NCCSR"="North Central",
+                          "NCSR"="North")) %>%
+  # Fill in missing regions
+  group_by(area) %>% 
+  fill(mpa_region, .direction = "updown") %>% 
+  ungroup() %>% 
+  mutate(mpa_region=ifelse(area=="Trinidad", "North", mpa_region)) %>% 
   # Arrange
   select(-c(ltm_project_short_code, ca_mpa_name_short)) %>% 
   select(monitoring_group, area, mpa, mpa_long, mpa_region, mpa_type, everything())
@@ -90,11 +102,15 @@ sites <- sites_orig %>%
 # Confirm unique id
 freeR::which_duplicated(sites$cell_id)
 
-# Inspect
+# Inspects
+str(sites)
 freeR::complete(sites)
 
 # Inspect more
 table(sites$area)
+
+# Area key
+count(sites, area, area_code, mpa_region)
 
 # Export
 saveRDS(sites, file=file.path(outdir, "ccfrp_sites.Rds"))
@@ -175,7 +191,7 @@ freeR::complete(lengths)
 data <- effort_orig %>% 
   # Rename
   janitor::clean_names("snake") %>% 
-  rename(comm_name=common_name,
+  rename(comm_name_orig=common_name,
          cell_id=grid_cell_id,
          mpa=ca_mpa_name_short,
          survey_id=id_cell_per_trip,
@@ -198,8 +214,12 @@ data <- effort_orig %>%
                      "Farallon Islands"="Southeast Farallon Islands")) %>% 
   # Add MPA region
   left_join(area_key, by="area") %>% 
+  # Add species info
+  left_join(spp %>% select(comm_name_orig, comm_name, sci_name), by="comm_name_orig") %>% 
   # Factor area
-  mutate(area=factor(area, levels=area_key$area))
+  mutate(area=factor(area, levels=area_key$area)) %>% 
+  # Arrange
+  select(ltm_project_short_code:comm_name_orig, comm_name, sci_name, everything())
 
 
 # Inspect

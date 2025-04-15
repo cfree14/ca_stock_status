@@ -26,7 +26,7 @@ data_orig <- readRDS(file=file.path(datadir, "calcofi_indices_of_abundance.Rds")
 spp <- sort(unique(data_orig$species))
 
 # Years to look over
-nyrs <- 10
+nyrs <- 5
 max_year <- max(data_orig$year)
 min_year <- max_year - nyrs + 1
 
@@ -54,12 +54,21 @@ output <- purrr::map_df(spp, function(x){
   # Extract slope, intercept, and p-value
   slope <- coef(model)[2]
   intercept <- coef(model)[1]
+  
+  # Calculate recent and longterm averages
+  avg_recent <- mean(sdata_use$index)
+  avg_longterm <- mean(sdata$index)
+  ttest_avg <- t.test(sdata_use$index, sdata$index)
+  pvalue_avg <- ttest_avg$p.value
 
   # Generate line
   df <- tibble(species=spp_do,
                slope=slope,
                intercept=intercept, 
                pvalue=pvalue,
+               avg_recent=avg_recent,
+               avg_longterm=avg_longterm,
+               pvalue_avg=pvalue_avg,
                year=min_year:max_year)
   index_est <- predict(model, df)
   df$index <- index_est
@@ -70,6 +79,7 @@ output <- purrr::map_df(spp, function(x){
     geom_ribbon(mapping=aes(ymin=index_lo, ymax=index_hi), fill="grey90") +
     geom_line() +
     geom_point() +
+    geom_hline(yintercept=avg_longterm, linetype="dashed") +
     # Plot fit
     # geom_abline(slope=slope, intercept=intercept) +
     geom_line(data=df, color="red", linewidth=1.3) +

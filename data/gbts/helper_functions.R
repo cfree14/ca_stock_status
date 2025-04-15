@@ -33,7 +33,7 @@ build_data <- function(hauls, catch, species_do){
   map_theme <- theme(axis.ticks=element_blank(),
                      axis.text=element_blank(),
                      axis.title=element_blank(),
-                     legend.text=element_text(size=7),
+                     legend.text=element_text(size=7, angle = 45, hjust = 0.5, vjust = 1),
                      legend.title=element_text(size=8),
                      strip.text=element_text(size=5),
                      plot.title = element_text(size=8),
@@ -66,10 +66,14 @@ build_data <- function(hauls, catch, species_do){
     labs(title=species_do) +
     # Legend
     scale_color_gradientn(name="CPUE (kg/ka)", 
+                          trans="log10",
+                          breaks=c(0.01, 0.1, 1, 10, 100, 1000, 10000),
+                          labels=c("0.01", "0.1", "1", "10", "100", "1000", "10000"),
                           colors=RColorBrewer::brewer.pal(9, "Spectral") %>% rev()) +
     guides(color = guide_colorbar(ticks.colour = "black", frame.colour = "black", frame.linewidth = 0.2)) +
     # Crop
-    coord_sf(xlim = c(-126, -116), ylim = c(32, 49)) +
+    coord_sf(xlim = c(-126, -116), ylim = c(32, 42)) + # coastwide
+    # coord_sf(xlim = c(-126, -116), ylim = c(32, 49)) + # coastwide
     # Theme
     theme_bw() + map_theme
   g
@@ -77,7 +81,7 @@ build_data <- function(hauls, catch, species_do){
   # Export figure
   figname <- species_do %>% tolower() %>% gsub(" ", "_", .) %>% paste0("data_", ., ".png")
   ggsave(g, filename=file.path(plotdir, figname ), 
-         width=6.5, height=7.5, units="in", dpi=600) 
+         width=6.5, height=5.0, units="in", dpi=600) 
   
   # Return
   ################################################################################
@@ -115,17 +119,62 @@ fit_model <- function(data){
 # Function validate model
 ################################################################################
 
+parse_sanity_check <- function(x){
+  
+  hess_out <- ifelse(x$hessian_ok==T, 
+                     "Hessian matrix is positive definite", 
+                     "***Non-positive-definite Hessian matrix: model may not have converged***")
+  eigen_out <- ifelse(x$eigen_values_ok==T, 
+                      "No extreme or very small eigenvalues detected", 
+                      "Extreme or very small eigenvalues detected: model may not have converged")
+  nlminb_out <- ifelse(x$nlminb_ok==T, 
+                       "Non-linear minimizer suggests successful convergence", 
+                       "***Non-linear minimizer did not converge: do not trust this model***")
+  range_out <- ifelse(x$range_ok==T, 
+                      "Range parameters don't look unreasonably large", 
+                      "A `range` parameter looks fairly large (> 1.5 the greatest distance in data)")
+  gradients_out <- ifelse(x$gradients_ok==T, 
+                          "No gradients with respect to fixed effects are large", 
+                          "***See ?run_extra_optimization(), standardize covariates, and/or simplify the model***")
+  se_mag_out <- ifelse(x$se_magnitude_ok==T, 
+                       "No standard errors look unreasonably large", 
+                       "***Some standard errors may be large***")
+  se_na_out <- ifelse(x$se_na_ok==T, 
+                      "No fixed-effect standard errors are NA", 
+                      "***Some fixed-effect standard errors are NA***")
+  sigmas_out <- ifelse(x$sigmas_ok==T, 
+                       "Sigmas look okay", 
+                       "***Sigmas are messed up")
+
+  out <- paste(hess_out, eigen_out, nlminb_out, range_out, 
+               gradients_out, se_mag_out, se_na_out, sigmas_out, sep="\n")
+  return(out)
+}
+
+
+# model <- m
 inspect_model <- function(model, data, species){
   
   # Sanity check
-  sanity(model)
+  san_out <- sanity(model)
+  
+  san_out_txt <- parse_sanity_check(san_out)
   
   # Record and inspect residuals
-  resids <- residuals(model, type="mle-mvn")
+  resids1 <- residuals(model, type="mle-mvn", model=1)
+  resids2 <- residuals(model, type="mle-mvn", model=2)
   mdata <- model$data
-  mdata$resid <- resids
-  hist(mdata$resid)
+  mdata$resid1 <- resids1
+  mdata$resid2 <- resids2
   species <- unique(mdata$comm_name)
+  
+  # Format for plotting
+  resids <- mdata %>% 
+    select(trawl_id, resid1, resid2) %>% 
+    gather(key="model", value="resid", 2:ncol(.)) %>% 
+    mutate(model=recode(model, 
+                        "resid1"="Model 1",
+                        "resid2"="Model 2"))
 
   # Base theme
   base_theme <- theme(axis.text=element_text(size=7),
@@ -142,34 +191,41 @@ inspect_model <- function(model, data, species){
   
   
   # Residual histogram
-  g1 <- ggplot(mdata, aes(x=resid)) +
-    geom_histogram(fill="grey80") +
+  g1 <- ggplot(resids, aes(x=resid, fill=model)) +
+    facet_wrap(~model, scale="free_y") +
+    geom_histogram() +
     # Reference line
     geom_vline(xintercept=0, linetype="dashed", color="grey30") +
     # Labels
     labs(x="Residual", y="# of tows", title=species) +
     # Theme
     theme_bw() + base_theme +
-    theme(axis.text.y = element_text(angle = 90, hjust = 0.5))
+    theme(legend.position="none", 
+          axis.text.y = element_text(angle = 90, hjust = 0.5))
   g1
   
   # QQ-plot
-  qq <- qqnorm(mdata$resid)
-  qq_df <- tibble(x=qq$x,
-                  y=qq$y)
-  g2 <- ggplot(qq_df, aes(x=x, y=y)) +
-    geom_point(pch=1, color="grey50") +
+  qq1 <- qqnorm(mdata$resid1) %>% as.data.frame() %>% mutate(model="Model 1")
+  qq2 <- qqnorm(mdata$resid2) %>% as.data.frame() %>% mutate(model="Model 2")
+  qq_df <- rbind(qq1, qq2)
+  g2 <- ggplot(qq_df, aes(x=x, y=y, color=model)) +
+    geom_point(pch=1) +
+    annotate("text",
+             x=min(qq_df$x, na.rm=T),
+             y=max(qq_df$y, na.rm=T)*0.7,
+             label=san_out_txt, size=2, hjust=0) +
     # Reference line
     geom_abline(slope=1) +
     # Labels
     labs(x="Theoretical quantiles", y="Sample quantiles") +
     # Theme
-    theme_bw() + base_theme
+    theme_bw() + base_theme +
+    theme(legend.position = "none")
   g2
   
 
   # Spatial residuals
-  g3 <- ggplot(mdata, aes(x=long_dd, y=lat_dd, color=resid)) +
+  g3 <- ggplot(mdata, aes(x=long_dd, y=lat_dd, color=resid1)) +
     facet_wrap(~year) +
     geom_point(size=0.5) +
     # Legend
@@ -198,7 +254,7 @@ inspect_model <- function(model, data, species){
   
   
   # Export
-  figname <- species %>% tolower() %>% gsub(" ", "_", .) %>% paste0(., "_diagnostics.png")
+  figname <- species %>% tolower() %>% gsub(" ", "_", .) %>% paste0("diagnostics_", .,  ".png")
   ggsave(g, filename=file.path(plotdir, figname),
          width=6.5, height=6.5, units="in", dpi=600)
   
@@ -211,15 +267,13 @@ inspect_model <- function(model, data, species){
 make_preds <- function(model, pred_grid){
   
   # Build prediction grid
-  area_km2 <- 5 * 5
   years <- sort(unique(model$data$year))
   pred_grid_yrs <- purrr::map_df(years, function(x){
     df <- pred_grid %>% 
       mutate(year=x) %>% 
       select(year, everything())
   }) %>% 
-    mutate(yday=105) # Apr 15
-  
+    mutate(pass_scaled=0.5) # Fall
   
   # Make predictions
   preds <- predict(model, newdata = pred_grid_yrs, return_tmb_object = TRUE)
@@ -242,8 +296,7 @@ extract_index <- function(preds){
   species <- preds$species
   
   # Extract index
-  area_km2 <- 5*5
-  index <- get_index(preds, area = area_km2, bias_correct = TRUE)
+  index <- get_index(preds, area = preds$data$area_ha, bias_correct = TRUE)
   
   # Format index
   index_df <- index %>% 
@@ -274,7 +327,7 @@ extract_index <- function(preds){
   g
   
   # Export
-  figname <- species %>% tolower() %>% gsub(" ", "_", .) %>% paste0(., "_index.png")
+  figname <- species %>% tolower() %>% gsub(" ", "_", .) %>% paste0("index_", ., ".png")
   ggsave(g, filename=file.path(plotdir, figname),
          width=4.5, height=2.5, units="in", dpi=600)
   

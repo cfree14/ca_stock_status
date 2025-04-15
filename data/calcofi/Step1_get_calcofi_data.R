@@ -184,6 +184,9 @@ data <- data_orig %>%
                       tow_type_code, net_location, tow_number, sep="-")) %>% 
   # Fill missing common names
   mutate(comm_name=ifelse(comm_name=="", sci_name, comm_name)) %>% 
+  # Fix scientific name
+  mutate(sci_name=recode(sci_name, 
+                         "Cyclothone signata"="Cyclothone alba")) %>% 
   # Arrange
   select(year, date, time, time1, 
          cruise, ship, ship_code,
@@ -239,6 +242,9 @@ spp_key <- data %>%
   # Species or generic
   mutate(nword=freeR::nwords(sci_name),
          taxa_type=ifelse(nword>1, "species", "general"))
+
+# Fix names some day?
+freeR::check_names(spp_key$sci_name[spp_key$taxa_type=="species"])
 
 # Export species key
 write.csv(spp_key, file=file.path(outdir, "calcofi_species_key.csv"), row.names=F)

@@ -138,12 +138,18 @@ nsurveys_tot <- catch %>%
 # Species stats
 stats <- catch %>% 
   filter(mpa_region=="Central" & count>0) %>% 
-  group_by(comm_name) %>% 
+  group_by(comm_name, sci_name) %>% 
   summarize(nyr=n_distinct(year),
             nsurveys=n_distinct(survey_id)) %>% 
   ungroup() %>% 
   mutate(psurveys=nsurveys/nsurveys_tot) %>% 
   filter(nyr>=14 & nsurveys >= 10)
+
+# Check names
+freeR::check_names(stats$sci_name)
+
+# Export
+saveRDS(stats, file=file.path(outdir, "CCFRP_species_to_evaluate.Rds"))
 
 # Plot data
 g <- ggplot(stats, aes(x=psurveys, y=reorder(comm_name, desc(psurveys)))) +

@@ -65,7 +65,12 @@ stats <- data %>%
   # Filter to requirements
   filter(nyrs>=30 & ntows>=300) %>% 
   # Compute percent of tows
-  mutate(ptows=ntows/nrow(tows))
+  mutate(ptows=ntows/nrow(tows)) %>% 
+  # Remove groups
+  filter(taxa_type=="species")
+
+# Check names
+freeR::check_names(stats$sci_name) # Lampanyctus ritteri is right
 
 # Export
 write.csv(stats, file=file.path(datadir, "calcofi_species_to_evaluate.csv"))
