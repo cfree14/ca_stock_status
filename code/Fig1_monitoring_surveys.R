@@ -13,7 +13,7 @@ library(taxize)
 plotdir <- "figures"
 
 # Read trawl survey footprint
-gbts <- readRDS("/Users/cfree/Dropbox/Chris/UCSB/projects/dcrab_multistressor/data/trawl_survey/processed/nwfsc_wcbts_grid_cells.Rds") %>% 
+gbts_footprint <- readRDS("/Users/cfree/Dropbox/Chris/UCSB/projects/dcrab_multistressor/data/trawl_survey/processed/nwfsc_wcbts_grid_cells.Rds") %>% 
   sf::st_as_sf() %>% 
   filter(ll_lat<=42)
 
@@ -22,6 +22,9 @@ calcofi_orig <- readRDS("data/calcofi/processed/calcofi_stations.Rds")
 rreas_orig <- readRDS("data/rreas/processed/RREAS_station_key.Rds")
 ccfrp_orig <- readRDS("data/ccfrp/processed/ccfrp_sites.Rds")
 scuba_orig <- readRDS("data/kelp_scuba/processed/scuba_transects.Rds")
+
+# Read survey years
+survey_yrs <- readxl::read_excel("data/survey_years_temp.xlsx")
 
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
@@ -59,7 +62,15 @@ ccfrp <- ccfrp_orig %>%
   mutate(survey="CCFRP") %>% 
   select(survey, lat_dd, long_dd)
 
-stations <- bind_rows(calcofi, rreas, ccfrp, scuba)
+# Create fake one so it shows up in legend
+gbts <- tibble(survey="GBTS",
+               lat_dd=41,
+               long_dd=-124.3)
+
+# Merge stations
+stations <- bind_rows(calcofi, rreas, ccfrp, scuba, gbts) %>% 
+  mutate(survey=factor(survey,
+                       levels=c("GBTS", "RREAS", "CalCOFI", "CCFRP", "SCUBA")))
 
 
 # Plot data
@@ -72,6 +83,7 @@ my_theme <-  theme(axis.text=element_text(size=8),
                    legend.title=element_text(size=9),
                    strip.text=element_text(size=8),
                    plot.title=element_text(size=9),
+                   plot.tag = element_text(size=9),
                    axis.text.y = element_text(angle = 90, hjust = 0.5),
                    # Gridlines
                    panel.grid.major = element_blank(), 
@@ -84,27 +96,47 @@ my_theme <-  theme(axis.text=element_text(size=8),
                    legend.background = element_rect(fill=alpha('blue', 0)))
 
 # Plot data
-g <- ggplot(stations, aes(x=long_dd, y=lat_dd, color=survey, )) +
+g1 <- ggplot(stations, aes(x=long_dd, y=lat_dd, color=survey, )) +
   # Plot land
   geom_sf(data=foreign, fill="grey90", color="white", lwd=0.3, inherit.aes = F) +
   geom_sf(data=usa, fill="grey90", color="white", lwd=0.3, inherit.aes = F) +
   # Plot trawl survey
-  geom_sf(data=gbts, color="grey30", fill="grey30", inherit.aes = F) +
-  # Path
-  #geom_path(mapping=aes(x=long_dd, y=lat_dd), color="grey80", inherit.aes=F) +
+  geom_sf(data=gbts_footprint, color="grey60", fill="grey60", inherit.aes = F) +
   # Stations
   geom_point() + 
-  # geom_text(color="black") +
+  # Labels
+  labs(tag="A") +
   # Legend
-  scale_color_discrete(name="Survey") +
+  scale_color_manual(name="Survey",
+                     values=c("grey60", RColorBrewer::brewer.pal(4, "Set1"))) +
   # Crop
   coord_sf(xlim = c(-126.5, -116.5), ylim = c(30, 42)) +
   # Theme
   theme_bw() + my_theme +
   theme(legend.position = c(0.78, 0.8))
-g
+g1
+
+# Plot time series
+g2 <- ggplot(survey_yrs) +
+  geom_segment(mapping=aes(x=start, xend=end, y=survey, color=survey),
+               size=2) +
+  # Labels
+  labs(x="Year", tag="B") +
+  scale_x_continuous(breaks=seq(1985,2025, 5)) +
+  # Legend
+  scale_color_manual(name="Survey",
+                     values=c("grey60", RColorBrewer::brewer.pal(4, "Set1"))) +
+  # Theme
+  theme_bw() + my_theme +
+  theme(legend.position = "none",
+        axis.text.y = element_text(angle = 0, hjust = 0))
+g2
+
+# Merge
+g <- gridExtra::grid.arrange(g1, g2, ncol=1, heights=c(0.78, 0.22))
+
 
 # Export figure
-ggsave(g, filename=file.path(plotdir, "FigX_monitoring_surveys.png"), 
-       width=3.4, height=4.5, units="in", dpi=600)
+ggsave(g, filename=file.path(plotdir, "Fig1_monitoring_surveys.png"), 
+       width=3.5, height=5.5, units="in", dpi=600)
 
