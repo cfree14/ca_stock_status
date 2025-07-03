@@ -45,14 +45,15 @@ spp <- spp_orig %>%
                          "Traikis semifasciata"="Triakis semifasciata",
                          "Xenistius californiensis"="Brachygenys californiensis"))
 
-freeR::check_names(spp$sci_name)
+# Check names
+# These are correct: Beringraja binoculata, Brachygenys californiensis, Caliraja stellulata, Sebastes diaconus
+freeR::check_names(spp$sci_name) 
 
 # Inspect
 freeR::complete(spp)
 
 # Confirm unique id
 freeR::which_duplicated(spp$species_code)
-
 
 
 # Format site key
@@ -204,6 +205,9 @@ data <- effort_orig %>%
          angler_hrs=total_angler_hours,
          cpue_n_hr=cpue_catch_per_angler_hour,
          cpue_kg_hr=bpue_biomass_kg_per_angler_hour) %>% 
+  # Format bad date
+  mutate(day=ifelse(day==32, 31, day),
+         date=ifelse(date=="2023-08-32", "2023-08-31", date)) %>% 
   # Format date
   mutate(date=lubridate::ymd(date),
          yday=yday(date)) %>% 
@@ -213,7 +217,9 @@ data <- effort_orig %>%
                      "Cape Mendocino"="South Cape Mendocino",
                      "Farallon Islands"="Southeast Farallon Islands")) %>% 
   # Add MPA region
-  left_join(area_key, by="area") %>% 
+  # left_join(area_key, by="area") %>% 
+  # Add MPA region and stats
+  left_join(sites %>% select(cell_id, lat_dd, long_dd, mpa_region), by="cell_id") %>% 
   # Add species info
   left_join(spp %>% select(comm_name_orig, comm_name, sci_name), by="comm_name_orig") %>% 
   # Factor area
@@ -239,11 +245,14 @@ saveRDS(data, file=file.path(outdir, "ccfrp_catch_data.Rds"))
 # Survey
 surveys <- data %>% 
   # Unique
-  select(monitoring_group, mpa, area, mpa_status, year, month, day,  date, yday, survey_id, cell_id, sst_c, bottom_c, vessel_c, relief,
+  select(monitoring_group, mpa_region, area, mpa_status,mpa,  
+         year, month, day,  date, yday, 
+         survey_id, cell_id, lat_dd, long_dd, 
+         sst_c, bottom_c, vessel_c, relief,
          start_depth_m, end_depth_m, wind_kt, swell_m) %>% 
   unique() %>% 
   # Add MPA region
-  left_join(area_key, by="area") %>% 
+  # left_join(area_key, by="area") %>% 
   # Format areas
   mutate(area=factor(area, levels=area_key$area))
 

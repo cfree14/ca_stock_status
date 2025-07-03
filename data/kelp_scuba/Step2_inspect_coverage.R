@@ -35,19 +35,33 @@ sites <- transect_orig %>%
   group_by(site) %>% 
   summarize(lat_dd=mean(lat_dd),
             long_dd=mean(long_dd),
-            nyrs=n_distinct(survey_year))
+            nyrs=n_distinct(survey_year),
+            nyrs_post2008=n_distinct(survey_year[survey_year>=2008])) %>% 
+  ungroup() %>% 
+  mutate(include_yn=ifelse(nyrs_post2008>10, "yes", "no"))
+
+sites_use <- sites$site[sites$include_yn=="yes"]
+
+# Export sites to use
+sites2use <- sites %>% 
+  filter(include_yn=="yes")
+saveRDS(sites2use, file.path(outdir, "scuba_sites_to_evaluate.Rds"))
 
 # Check unique
 freeR::which_duplicated(sites$site)
 
 # Summarize surveys
 surveys <- transect_orig %>% 
+  # Calculate latitude of a survey (which contains multiple transets)
   group_by(campus, method, survey_year, year, date, yday, site, site_old, survey_id) %>% 
   summarize(lat_dd=mean(lat_dd, na.rm=T)) %>% 
   ungroup() %>% 
+  # Order campus
   mutate(campus=factor(campus, levels=c("VRG", "UCSB", "UCSC", "HSU") %>% rev())) %>% 
   arrange(campus, desc(lat_dd)) %>% 
-  mutate(date_dummy=paste("2000", month(date), day(date), sep="-") %>% ymd())
+  mutate(date_dummy=paste("2000", month(date), day(date), sep="-") %>% ymd()) %>% 
+  # Mark sites
+  left_join(sites %>% select(site, include_yn), by="site")
 
 # Check unique
 freeR::which_duplicated(surveys$survey_id)
@@ -78,7 +92,7 @@ g1 <- ggplot(sites, aes(x=long_dd, y=lat_dd, fill=nyrs)) +
   geom_sf(data=foreign, fill="grey90", color="white", lwd=0.3, inherit.aes = F) +
   geom_sf(data=usa, fill="grey90", color="white", lwd=0.3, inherit.aes = F) +
   # Plot sites
-  geom_point() +
+  geom_point(pch=21) +
   # Legend
   scale_fill_gradientn(name="# of years", colors=RColorBrewer::brewer.pal(9, "Spectral") %>% rev()) +
   guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black", frame.linewidth = 0.2)) +
@@ -93,7 +107,7 @@ g1 <- ggplot(sites, aes(x=long_dd, y=lat_dd, fill=nyrs)) +
 g1
 
 # Plot data
-g2 <- ggplot(surveys, aes(x=date, y=reorder(site, desc(lat_dd)))) +
+g2 <- ggplot(surveys, aes(x=date, y=reorder(site, desc(lat_dd)), color=include_yn)) +
   facet_grid(campus~., space="free_y", scales="free_y") +
   geom_point(size=0.3) +
   # Add reference line
@@ -103,9 +117,12 @@ g2 <- ggplot(surveys, aes(x=date, y=reorder(site, desc(lat_dd)))) +
   scale_x_date(breaks=seq(ymd("2000-01-01"), 
                           ymd("2020-01-01"), by="5 years"),
                date_label="%Y") +
+  # Legend
+  scale_color_manual(name="Include?", values=c("grey70", "black")) +
   # Theme
   theme_bw() + base_theme +
-  theme(axis.ticks.y=element_blank(),
+  theme(legend.position="none",
+        axis.ticks.y=element_blank(),
         axis.text.y=element_blank(),
         axis.title = element_blank())
 g2
@@ -157,7 +174,7 @@ length(2008:2023)
 # Species stats
 stats <- data_orig %>% 
   # Filter
-  filter(year>=2008 & yday>=182) %>% 
+  filter(year>=2008 & yday>=182 & site %in% sites_use) %>% 
   # Summarize
   group_by(classcode, comm_name, sci_name) %>% 
   summarize(nyr=n_distinct(year), 
