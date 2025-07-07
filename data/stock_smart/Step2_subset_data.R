@@ -35,7 +35,18 @@ areas_ca_plus <- c(areas_ca, "Central Pacific Coast", "Pacific Coast",
 
 # CA stocks
 stocks_ca <- stocks %>% 
-  filter(area %in% areas_ca_plus)
+  # Reduce to CA stocks
+  filter(area %in% areas_ca_plus) %>% 
+  # Fill missing common names
+  mutate(comm_name=case_when(stock=="Vermilion rockfish and Sunset rockfish Complex - Northern California" ~ "Vermilion rockfish, Sunset rockfish",
+                             stock=="Vermilion rockfish and Sunset rockfish Complex - Southern California" ~ "Vermilion rockfish, Sunset rockfish",
+                             stock=="Northern California Gopher / Black-and-Yellow Rockfish Complex" ~ "Gopher rockfish, Black-and-yellow rockfish",
+                             T ~ comm_name)) %>% 
+  # Fill missing scientific names
+  mutate(sci_name=case_when(comm_name=="Vermilion rockfish, Sunset rockfish" ~ "Sebastes miniatus, Sebastes crocotulus", 
+                            comm_name=="Gopher rockfish, Black-and-yellow rockfish" ~ "Sebastes carnatus, Sebastes chrysomelas",
+                            T ~ sci_name))
+
 
 # Subset data
 data_ca <- data %>% 
@@ -46,7 +57,11 @@ data_ca <- data %>%
   # Scale abundance data
   group_by(stock) %>% 
   mutate(value_scaled=value/max(value)) %>% 
-  ungroup()
+  ungroup() %>% 
+  # Add taxa info
+  left_join(stocks_ca %>% select(stock, comm_name, sci_name), by="stock") %>% 
+  # Arrange
+  select(stock, comm_name, sci_name, everything())
 
 # Stats
 stats <- data_ca %>% 

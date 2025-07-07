@@ -136,7 +136,7 @@ stocks1 <- stocks_orig %>%
   # Stocks of interest
   filter(stock_id %in% stocks$stock_id) %>% 
   # Convert to numeric
-  mutate_at(vars(f_year, estimated_f, f_flimit, ftarget, f_ftarget, flimit, fmsy, f_fmsy,
+  mutate_at(vars(last_data_year, f_year, estimated_f, f_flimit, ftarget, f_ftarget, flimit, fmsy, f_fmsy,
                  b_year, estimated_b,
                  blimit, bmsy, b_blimit, b_bmsy, msy), as.numeric) %>% 
   # Clean scientific name

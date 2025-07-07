@@ -15,6 +15,9 @@ datadir <- "data/calcofi/processed"
 outdir <- "data/calcofi/output"
 plotdir <- "data/calcofi/figures"
 
+# Species key
+spp_key <- read.csv(file.path(datadir, "calcofi_species_to_evaluate.csv"))
+
 # Merge data
 ################################################################################
 
@@ -23,7 +26,7 @@ files2merge <- list.files(outdir)
 
 # Merge files
 x <- files2merge[1]
-data <- purrr::map_df(files2merge, function(x){
+data_orig <- purrr::map_df(files2merge, function(x){
   
   # Read data
   output <- readRDS(file.path(outdir, x))
@@ -34,12 +37,18 @@ data <- purrr::map_df(files2merge, function(x){
 })
 
 # Clean up
-data <- data %>% 
-  mutate(species=recode(species, 
+data <- data_orig %>% 
+  rename(comm_name=species) %>% 
+  left_join(spp_key %>% select(comm_name, sci_name, taxa_type)) %>% 
+  mutate(comm_name=recode(comm_name, 
                         "Pacific hake or whiting"="Pacific hake",
                         "Pacific mackerel (chub mackerel)"="Pacific mackerel",
                         "Pacific sardine (pilchard)"="Pacific sardine",
-                        "Unidentified Teliost"="Unidentified teleost"))
+                        "Unidentified Teliost"="Unidentified teleost")) %>% 
+  select(comm_name, sci_name, everything()) %>% 
+  filter(sci_name %in% spp_key$sci_name)
+
+freeR::complete(data)
 
 # Export
 saveRDS(data, file=file.path(datadir, "calcofi_indices_of_abundance.Rds"))
