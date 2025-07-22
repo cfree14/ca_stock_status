@@ -18,22 +18,22 @@ plotdir <- "data/stock_smart/figures"
 calcofi_orig <- readRDS("data/calcofi/processed/calcofi_indices_of_abundance.Rds")
 stocksmart_orig <- readRDS("data/stock_smart/processed/stock_smart_data_use.Rds")
 ccfrp_orig <- readRDS("data/ccfrp/processed/CCFRP_abundance_indices.Rds")
-# rreas_orig <- readRDS("data/rreas/processed/rreas_indices_of_abundance.Rds")
-# gbts_orig <- readRDS("data/gbts/processed/rreas_indices_of_abundance.Rds")
-# scuba_orig <- readRDS("data/scuba/processed/rreas_indices_of_abundance.Rds")
+rreas_orig <- readRDS("data/rreas/processed/RREAS_indices_of_abundance_simple.Rds")
+gbts_orig <- readRDS("data/gbts/processed/GBTS_indices_of_abundance_simple.Rds")
+scuba_orig <- readRDS("data/kelp_scuba/processed/SCUBA_indices_of_abundance_simple.Rds")
 
 
 # Prep data
 ################################################################################
 
-# Prep calcofi - add sci name
+# Prep CalCOFI
 calcofi <- calcofi_orig %>% 
   # Add
   mutate(dataset="CalCOFI") %>%
   # Simplify
   select(dataset, comm_name, sci_name, year, index, index_lo, index_hi)
 
-# Prep CCFRP - add sci name
+# Prep CCFRP
 ccfrp <- ccfrp_orig %>% 
   # Add
   mutate(dataset="CCFRP") %>%
@@ -41,6 +41,27 @@ ccfrp <- ccfrp_orig %>%
   select(dataset, comm_name, sci_name, year, index, index_lo, index_hi) %>% 
   # Remove species
   filter(!comm_name %in% c("Unid blue rockfish"))
+
+# Prep GBTS
+gbts <- gbts_orig %>% 
+  # Add
+  mutate(dataset="GBTS") %>%
+  # Simplify
+  select(dataset, comm_name, sci_name, year, index) 
+
+# Prep SCUBA
+scuba <- scuba_orig %>% 
+  # Add
+  mutate(dataset="SCUBA") %>%
+  # Simplify
+  select(dataset, comm_name, sci_name, year, index) 
+
+# Prep RREAS
+rreas <- rreas_orig %>% 
+  # Add
+  mutate(dataset="RREAS") %>%
+  # Simplify
+  select(dataset, comm_name, sci_name, year, index) 
 
 
 # Prep StockSMART
@@ -93,11 +114,15 @@ stocksmart2 <- bind_rows(stocksmart1_spp, stocksmart1_comp)
 ################################################################################
 
 # Merge data
-data <- bind_rows(calcofi, ccfrp, stocksmart2) %>% 
+data <- bind_rows(calcofi, ccfrp, stocksmart2, gbts, scuba, rreas) %>% 
   # Arrange
   select(dataset, comm_name, sci_name, stock, year, everything()) %>% 
   # Fill stocks
   mutate(stock=ifelse(is.na(stock), paste(dataset, comm_name), stock)) %>% 
+  # Clean common name
+  mutate(comm_name=recode(comm_name,
+                          "North pacific hake"="Pacific hake",
+                          "Black and yellow rockfish"="Black-and-yellow rockfish")) %>% 
   # Sort
   arrange(dataset, comm_name, year)
 

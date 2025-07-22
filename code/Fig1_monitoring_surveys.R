@@ -24,7 +24,11 @@ ccfrp_orig <- readRDS("data/ccfrp/processed/ccfrp_sites.Rds")
 scuba_orig <- readRDS("data/kelp_scuba/processed/scuba_transects.Rds")
 
 # Read survey years
-survey_yrs <- readxl::read_excel("data/survey_years_temp.xlsx")
+surveys <- c("CalCOFI", "RREAS", "GBTS", "CCFRP", "SCUBA")
+survey_colors <- c("#377EB8", "#E41A1C", "grey60", "#4DAF4A", "#984EA3")
+survey_yrs <- readxl::read_excel("data/survey_years_temp.xlsx") %>% 
+  # ORder 
+  mutate(survey=factor(survey, levels=surveys))
 
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
@@ -34,7 +38,7 @@ foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclas
 # Build stations
 ################################################################################
 
-# JANKY SCUBA STATIONS - MAKE CORRECT IN SCUBA SECTIN
+# JANKY SCUBA STATIONS - MAKE CORRECT IN SCUBA SECTION
 scuba <- scuba_orig %>% 
   filter(year>=2008) %>% 
   group_by(campus, site) %>% 
@@ -70,7 +74,7 @@ gbts <- tibble(survey="GBTS",
 # Merge stations
 stations <- bind_rows(calcofi, rreas, ccfrp, scuba, gbts) %>% 
   mutate(survey=factor(survey,
-                       levels=c("GBTS", "RREAS", "CalCOFI", "CCFRP", "SCUBA")))
+                       levels=surveys))
 
 
 # Plot data
@@ -108,7 +112,7 @@ g1 <- ggplot(stations, aes(x=long_dd, y=lat_dd, color=survey, )) +
   labs(tag="A") +
   # Legend
   scale_color_manual(name="Survey",
-                     values=c("grey60", RColorBrewer::brewer.pal(4, "Set1"))) +
+                     values=survey_colors) +
   # Crop
   coord_sf(xlim = c(-126.5, -116.5), ylim = c(30, 42)) +
   # Theme
@@ -125,7 +129,7 @@ g2 <- ggplot(survey_yrs) +
   scale_x_continuous(breaks=seq(1985,2025, 5)) +
   # Legend
   scale_color_manual(name="Survey",
-                     values=c("grey60", RColorBrewer::brewer.pal(4, "Set1"))) +
+                     values=survey_colors) +
   # Theme
   theme_bw() + my_theme +
   theme(legend.position = "none",

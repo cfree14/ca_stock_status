@@ -15,52 +15,21 @@ datadir <- "data/merged"
 plotdir <- "figures"
 
 # Read data
-data_orig <- readRDS(file=file.path(datadir, "abundance_index_stats.Rds"))
-
-# Read StockSMART stats
-stocks_orig <- readRDS("data/stock_smart/processed/stock_smart_stocks_use.Rds")
-
+data_orig <- readRDS(file=file.path(datadir, "abundance_index_stats_expanded.Rds"))
 
 
 # Build data
 ################################################################################
 
-# Format data
+# Reduce to best dataset
 data <- data_orig %>% 
-  mutate(dataset_rank=recode(dataset, 
-                             "StockSMART"="1",
-                             "GBTS"="2",
-                             "CalCOFI"="3",
-                             "RREAS"="4",
-                             "CCFRP"="5",
-                             "SCUBA"="6") %>% as.numeric,
-         # avg_ratio=(avg_recent-avg_longterm) / avg_longterm,
-         avg_ratio=avg_recent/avg_longterm,
-         slope_rel=slope/avg_recent) %>% 
-  arrange(comm_name, dataset_rank) %>% 
-  group_by(comm_name) %>% 
+  arrange(sci_name, dataset_rank) %>% 
+  group_by(sci_name) %>% 
   slice(1) %>% 
-  ungroup() %>% 
-  # Add B/BMSY
-  mutate(stock_match=gsub(" 1| 2", "", stock)) %>% 
-  left_join(stocks_orig %>% select(stock, b_bmsy), by=c("stock_match"='stock')) %>% 
-  # Average ratio use
-  mutate(avg_ratio_use=ifelse(!is.na(b_bmsy), b_bmsy, avg_ratio)) %>% 
-  # Categorize
-  mutate(catg=case_when(avg_ratio_use>=1 & slope_rel>=0 ~ "top-right",
-                        avg_ratio_use>=1 & slope_rel<0~ "bottom-right",
-                        avg_ratio_use<1 & slope_rel<0 ~ "bottom-left",
-                        avg_ratio_use<1 & slope_rel>=0 ~ "top-left",
-                         T ~ NA),
-         catg=recode_factor(catg, 
-                       "top-left"="Low but increasing",
-                       "bottom-left"="Low and decreasing",
-                       "bottom-right"="High but decreasing",
-                       "top-right"="High and increasing" )) %>% 
-  # Caetorize assessed vs. unassessed
-  mutate(assessed_yn=ifelse(dataset=="StockSMART", "Assessed", "Unassessed"))
+  ungroup()
   
 
+# Calculate proportion in each category
 stats <- data %>% 
   count(catg) %>% 
   mutate(prop=n/sum(n))
@@ -116,10 +85,10 @@ g1
 g2 <- ggplot(stats, aes(x="", y=prop, fill=catg)) +
   geom_bar(stat="identity", color="grey30") +
   # Labels
-  labs(x=" ", y="% of species") +
+  labs(x=" ", y="% of species", tag="B") +
   scale_y_continuous(labels=scales::percent_format()) +
   # Legend
-  scale_fill_manual(name="Abundance", values=c("lightgreen", "yellow", "red", "orange") %>% rev()) +
+  scale_fill_manual(name="Abundance", values=c("lightgreen", "yellow",  "orange", "red") %>% rev()) +
   # Theme
   theme_bw() + my_theme +
   theme(legend.key.size = unit(0.3, "cm"))
@@ -128,10 +97,8 @@ g2
 # Merge
 g <- gridExtra::grid.arrange(g1, g2, widths=c(0.6, 0.4))
 
-
 # Export plot
-ggsave(g, filename=file.path(plotdir, "FigX_calcofi_score_card.png"), 
+ggsave(g, filename=file.path(plotdir, "FigX_score_card.png"), 
        width=6.5, height=4.5, units="in", dpi=600)
-
 
 
