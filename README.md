@@ -4,7 +4,7 @@ This is the GitHub repository for the following paper nearing submission:
 
 * Free CM, Allen LG, Bellquist L, Cieri K, Claisse JT, Field JC, Hamilton SL, Leising A, Satterthwaite EV, Silva J, Harris J. Status and trends of California’s fishes. Near submission.
 
-Please contact Chris Free with any questions about the repository.
+Please contact Chris Free (cfree14@gmail.com) with any questions about the repository.
 
 ## California Ocean Report Card
 
