@@ -59,7 +59,7 @@ data <- data_orig %>%
                              "SCUBA"="6") %>% as.numeric(),
          dataset=factor(dataset, levels=c("StockSMART", "GBTS", "CalCOFI", "RREAS", "CCFRP", "SCUBA"))) %>% 
   # Add species key
-  left_join(spp_key %>% select(sci_name, class, order, family, tl_long, habitat, assessed_yn, managed_yn), by="sci_name")
+  left_join(spp_key %>% select(sci_name, class, order, family, tl_long, habitat, assessed_yn, managed_yn, tmax_yr, linf_cm), by="sci_name")
 
 # Export
 saveRDS(data, file.path(datadir, "abundance_index_stats_expanded.Rds"))

@@ -46,6 +46,9 @@ fb_use <- fb %>%
   filter(database=="FishBase") %>% 
   unique()
 
+# FishLife
+fl <- freeR::fishlife(spp_key$sci_name)
+
 # Add taxa to species key
 spp_key1 <- spp_key %>% 
   # Add taxa info
@@ -83,14 +86,15 @@ spp_key2 <- spp_key1 %>%
                            sci_name=="Raja inornata" ~ "demersal", # Caliraja inornata on FishBase
                            sci_name=="Raja rhina" ~ "bathydemersal", # Caliraja rhina on FishBase
                            sci_name=="Sebastes crocotulus" ~ "reef-associated", # because similar to vermillion (Sebastes miniatus)
-                           T ~ habitat))
+                           T ~ habitat)) %>% 
+  # Add tmax and linf
+  left_join(fl %>% select(sci_name, tmax_yr, linf_cm), by="sci_name")
 
 # Check
 freeR::complete(spp_key2)
 
 # Export
 saveRDS(spp_key2, file=file.path(datadir, "species_key.Rds"))
-
 
 
 

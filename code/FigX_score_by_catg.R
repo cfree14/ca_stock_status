@@ -197,4 +197,78 @@ g <- gridExtra::grid.arrange(g1, g2, nrow=1, widths=c(0.4, 0.6))
 ggsave(g, filename=file.path(plotdir, "FigX_score_by_catg.png"), 
        width=6.5, height=4.2, units="in", dpi=600)
 
+
+
+
+# Build data
+################################################################################
+
+data1 <- data %>% 
+  mutate(tmax_yr_bin=cut(tmax_yr, breaks=c(0, 5, 10, 20, 50, 100), labels=c("<5 yr", "5-10 yr", "10-20 yr", "20-50 yr", ">50 yr")),
+         linf_cm_bin=cut(linf_cm, breaks=c(0, 25, 50, 100, 200), labels=c("<25 cm", "25-50 cm", "50-100 cm", "100-200 cm")))
+
+g1 <- ggplot(data1, aes(x=linf_cm, fill=linf_cm_bin)) +
+  geom_histogram(binwidth=2.5, closed="left") +
+  # Labels
+  labs(x="Linf (cm)", y="Number of species") +
+  # Theme
+  theme_bw()
+
+g2 <- ggplot(data1, aes(x=tmax_yr, fill=tmax_yr_bin)) +
+  geom_histogram(binwidth=2.5, closed="left") +
+  # Labels
+  labs(x="Max age (yr)", y="Number of species") +
+  # Theme
+  theme_bw()
+
+g <- gridExtra::grid.arrange(g1, g2)
+
+
+# Proportion by age
+stats_age <- data1 %>% 
+  group_by(tmax_yr_bin, catg) %>% 
+  summarize(n=n()) %>% 
+  ungroup() %>% 
+  group_by(tmax_yr_bin) %>% 
+  mutate(prop=n/sum(n)) %>% 
+  ungroup() %>% 
+  mutate(group="Max age (yr)") %>% 
+  rename(variable=tmax_yr_bin)
+
+stats_linf <- data1 %>% 
+  group_by(linf_cm_bin, catg) %>% 
+  summarize(n=n()) %>% 
+  ungroup() %>% 
+  group_by(linf_cm_bin) %>% 
+  mutate(prop=n/sum(n)) %>% 
+  ungroup() %>% 
+  mutate(group="Linf (cm)") %>% 
+  rename(variable=linf_cm_bin)
+
+stats_size <- bind_rows(stats_linf, stats_age) %>% 
+  mutate(variable=factor(variable, 
+                         levels=c(levels(stats_linf$variable), levels(stats_age$variable))))
+
+
+g <- ggplot(stats_size, aes(x=prop, y=variable, fill=catg)) +
+  # Facet
+  facet_grid(group~., space="free_y", scales="free_y") +
+  # Data
+  geom_bar(stat="identity", color="grey30", lwd=0.3) +
+  # geom_text(data=nstats %>% filter(group!="Order"), 
+  #           mapping=aes(label=n, y=variable), inherit.aes = F,
+  #           x=1.07, hjust=0.5, size=1.8, color="grey40") +
+  # Labels
+  labs(x="% of species", y="") +
+  scale_x_continuous(labels = scales::percent_format(), breaks=seq(0,1,0.25), lim=c(0, 1.09)) +
+  # Legend
+  scale_fill_manual(name="Abundance", values=c("lightgreen", "yellow",  "orange", "red") %>% rev()) +
+  # Theme
+  theme_bw() + my_theme
+g
+
+
+# Export plot
+ggsave(g, filename=file.path(plotdir, "FigX_score_by_catg_size.png"), 
+       width=5.5, height=3.5, units="in", dpi=600)
   
