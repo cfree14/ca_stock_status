@@ -14,13 +14,45 @@ plotdir <- "figures"
 
 # Read data
 datadir <- "/Users/cfree/Dropbox/Chris/UCSB/projects/california/cdfw_data/data/confidential/landing_receipts_2023/processed/"
-data_orig <- readRDS(file.path(datadir, "1980_2022_landings_receipts.Rds"))
+# data_orig <- readRDS(file.path(datadir, "1980_2022_landings_receipts.Rds"))
 
 # Species key
 spp_key <- readRDS("/Users/cfree/Dropbox/Chris/UCSB/projects/california/cdfw_data/data/public/cdfw_keys/processed/CDFW_species_key.Rds")
 
 # Read mgmt key
 mgmt_key <- readRDS(file="data/mgmt_plans/spp_mgmt_key.Rds")
+
+
+
+# RECFIN
+################################################################################
+
+# Get data
+recfin_orig <- wcfish::recfin_cte2
+freeR::check_names(recfin_orig$sci_name)
+
+
+# Format data
+recfin <- recfin_orig %>% 
+  # Filter
+  filter(state=="California" & status=="Retained" & type=="fish") %>% 
+  # Correct some scientific names
+  # All the commented ones are accepted names
+  mutate(sci_name=recode(sci_name, 
+                         "Semicossyphus pulcher"="Bodianus pulcher",
+                         "Beringraja stellulata" = "Caliraja stellulata")) %>% 
+  # Add mgmt data
+  left_join(mgmt_key %>% select(species, authority, fmp), by=c("sci_name"="species")) %>% 
+  # Fill in missing
+  mutate(fmp=ifelse(is.na(fmp), "Unmanaged", fmp)) %>% 
+  # Summarize
+  group_by(year, fmp) %>% 
+  summarize(catch_mt=sum(catch_mt, na.rm=T)) %>% 
+  ungroup()
+  # 
+
+ggplot(recfin, aes(x=year, y=catch_mt, fill=fmp)) + 
+  geom_bar(stat="identity")
 
 
 # Build data

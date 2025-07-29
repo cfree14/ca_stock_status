@@ -85,15 +85,26 @@ ca <- ca_orig %>%
                     "Nearshore FMP" = "CDFW Nearshore",                     
                     "Pacific Herring FMP" = "CDFW Pacific Herring",              
                     "Red Abalone FMP" = "CDFW Red Abalone")) %>% 
+  # Format species names
+  mutate(species = recode(species,
+                          "Bodianus pulcher" = "",    
+                          "Clupea pallasii"  = "Clupea pallasii pallasii",     
+                          # "Metacarcinus anthonyi"  = "",
+                          # "Romaleon antennarium" = "",  
+                          "Seriola dorsalis"  = "Seriola lalandi")) %>% 
   # Remove federally managed species
   filter(!species %in% pfmc$species)
 
 # Some species are both state/federal managed
 ca$species[ca$species %in% pfmc$species]
 
+# Check
+freeR::check_names(ca$species)
+
 # Merge data
 data <- bind_rows(ca, pfmc)
 
+count(data, fmp)
 
 # Export data
 ################################################################################

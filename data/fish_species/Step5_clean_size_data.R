@@ -29,7 +29,8 @@ data <- data_orig %>%
          tmax_yr=amax, 
          a50_yr=a50, 
          k=vb_k, 
-         linf_cm=vb_linf) %>% 
+         linf_cm=vb_linf,
+         lat_dd=n_lat) %>% 
   # Format class
   mutate(class=recode(class, 
                       "Pinon et al 2009;"="Actinopteri")) %>% 
@@ -42,11 +43,15 @@ data <- data_orig %>%
          family=recode(family,
                        " (Scorpaenidae (Sebastolobinae)"="Scorpaenidae (Sebastolobinae)")) %>% 
   # Format sex
-  mutate(sex=toupper(sex)) %>% 
+  mutate(sex=toupper(sex),
+         sex=recode(sex,
+                    "M"="male",
+                    "F"="female",
+                    "P"="pooled")) %>% 
   # Format species
   mutate(species=gsub("_", " ", species)) %>% 
   mutate(species=recode(species, 
-                        "Albula sp A" = "Albula spp.",                                  
+                        "Albula sp A" = "Albula gilberti",                                  
                         "Antennarius avalonis" = "Fowlerichthys avalonis",                            
                         "Apodichthys sanctaerosae" = "Ulvicola sanctaerosae",                      
                         "Asterotheca pentacanthus" = "Bathyagonus pentacanthus",                       
@@ -90,7 +95,7 @@ data <- data_orig %>%
                         # "Urobatis halleri" = ""
                         )) %>% 
   # Format n lat ???
-  mutate(n_lat=as.numeric(n_lat)) %>% 
+  mutate(lat_dd=as.numeric(lat_dd)) %>% 
   # Arrange
   select(class, order, family, species, sex:sources)
 
