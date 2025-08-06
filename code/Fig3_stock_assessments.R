@@ -32,6 +32,11 @@ stocks_label <- stocks %>%
 
 freeR::which_duplicated(stocks$comm_name)
 
+# Manuscript stats
+nrow(stocks)
+sum(stocks$b_bmsy>=1 & stocks$f_fmsy<=1)
+sum(stocks$b_bmsy>=0.5 & stocks$f_fmsy<=1)
+
 # Read data
 ################################################################################
 

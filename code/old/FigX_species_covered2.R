@@ -20,6 +20,14 @@ spp_do <- readRDS(file=file.path(outdir, "species_in_report_card.Rds"))
 # Build data
 ################################################################################
 
+# All of California
+n_distinct(spp_all$species)
+n_distinct(spp_all$class)
+n_distinct(spp_all$order)
+n_distinct(spp_all$family)
+n_distinct(spp_all$genus)
+
+
 # Stats all
 stats_all <- spp_all %>% 
   group_by(order) %>% 
