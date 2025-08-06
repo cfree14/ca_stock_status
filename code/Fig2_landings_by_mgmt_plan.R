@@ -50,7 +50,11 @@ rec <- rec_orig %>%
   summarize(landings_mt=sum(catch_mt, na.rm=T)) %>% 
   ungroup() %>% 
   # Categorize
-  mutate(fmp=factor(fmp, fmp_list))
+  mutate(fmp=factor(fmp, fmp_list)) %>% 
+  # Add prop
+  group_by(year) %>% 
+  mutate(prop=landings_mt/sum(landings_mt)) %>% 
+  ungroup()
 
 ggplot(rec, aes(x=year, y=landings_mt, fill=fmp)) + 
   geom_bar(stat="identity")
@@ -69,7 +73,12 @@ comm <- comm_orig %>%
   # Fill in missing
   mutate(fmp=ifelse(is.na(fmp), "Unmanaged", fmp)) %>% 
   # Categorize
-  mutate(fmp=factor(fmp, fmp_list))
+  mutate(fmp=factor(fmp, fmp_list)) %>% 
+  # Add prop
+  group_by(year) %>% 
+  mutate(prop_mt=landings_mt/sum(landings_mt),
+         prop_usd=value_usd/sum(value_usd)) %>% 
+  ungroup()
 
 
 # Build species
@@ -104,16 +113,20 @@ catch_spp <- bind_rows(rec_spp, comm_spp) %>%
 nspp <- catch_spp %>% 
   group_by(year, fmp) %>% 
   summarize(nspp=n_distinct(sci_name)) %>% 
-  unique()
+  unique() %>% 
+  # Add prop
+  group_by(year) %>% 
+  mutate(prop=nspp/sum(nspp)) %>% 
+  ungroup()
 
 
 # Plot data
 ################################################################################
 
 # Base theme
-base_theme <- theme(axis.text=element_text(size=5),
-                    axis.title=element_text(size=6),
-                    legend.text=element_text(size=5),
+base_theme <- theme(axis.text=element_text(size=5.5),
+                    axis.title=element_text(size=6.5),
+                    legend.text=element_text(size=5.5),
                     # legend.title=element_text(size=6),
                     legend.title=element_blank(),
                     plot.tag=element_text(size=7),
@@ -137,15 +150,33 @@ g1 <- ggplot(rec, aes(x=year, y=landings_mt/1000, fill=fmp)) +
   # Axes
   lims(y=c(0, NA)) +
   # Labels
-  labs(x="Year", y="Recreational landings (1000s mt)", tag="A") +
+  labs(x="Year", y="Recreational\nlandings (1000s mt)", tag="A") +
   scale_x_continuous(breaks=seq(1980,2020,10)) +
+  # Legend
+  scale_fill_manual(name="FMP", values=fmp_colors, drop=F) +
+  # Theme
+  theme_bw() + base_theme +
+  theme(axis.title.x=element_blank(),
+        legend.position = "none",
+        axis.text.y = element_text(angle = 90, hjust = 0.5))
+g1
+
+# Plot rec landings
+g1b <- ggplot(rec, aes(x=year, y=prop, fill=fmp)) +
+  geom_bar(stat="identity") +
+  # Axes
+  lims(y=c(0, NA)) +
+  # Labels
+  labs(x="Year", y=" \nProportion", tag=" ") +
+  scale_x_continuous(breaks=seq(1980,2020,10)) +
+  scale_y_continuous(labels=scales::percent_format()) +
   # Legend
   scale_fill_manual(name="FMP", values=fmp_colors, drop=F) +
   # Theme
   theme_bw() + base_theme +
   theme(legend.position = "none",
         axis.text.y = element_text(angle = 90, hjust = 0.5))
-g1
+g1b
 
 # Plot commercial landings
 g2 <- ggplot(comm, aes(x=year, y=landings_mt/1000, fill=fmp)) +
@@ -153,14 +184,30 @@ g2 <- ggplot(comm, aes(x=year, y=landings_mt/1000, fill=fmp)) +
   # Axes
   lims(y=c(0, NA)) +
   # Labels
-  labs(x="Year", y="Commercial landings (1000s mt)", tag="B") +
+  labs(x="Year", y="Commercial\nlandings (1000s mt)", tag="B") +
+  # Legend
+  scale_fill_manual(name="FMP", values=fmp_colors, drop=F) +
+  # Theme
+  theme_bw() + base_theme +
+  theme(axis.title.x=element_blank(),
+        legend.position = "none",
+        axis.text.y = element_text(angle = 90, hjust = 0.5))
+g2
+
+# Plot commercial landings
+g2b <- ggplot(comm, aes(x=year, y=prop_mt, fill=fmp)) +
+  geom_bar(stat="identity") +
+  # Labels
+  labs(x="Year", y=" \nProportion", tag=" ") +
+  scale_x_continuous(breaks=seq(1980,2020,10)) +
+  scale_y_continuous(labels=scales::percent_format()) +
   # Legend
   scale_fill_manual(name="FMP", values=fmp_colors, drop=F) +
   # Theme
   theme_bw() + base_theme +
   theme(legend.position = "none",
         axis.text.y = element_text(angle = 90, hjust = 0.5))
-g2
+g2b
 
 # Plot value
 g3 <- ggplot(comm, aes(x=year, y=value_usd/1e6, fill=fmp)) +
@@ -168,16 +215,33 @@ g3 <- ggplot(comm, aes(x=year, y=value_usd/1e6, fill=fmp)) +
   # Axes
   lims(y=c(0, NA)) +
   # Labels
-  labs(x="Year", y="Commercial revenues (USD millions)", tag="C") +
+  labs(x="Year", y="Commercial\nrevenues (USD millions)", tag="C") +
   # Legend
   scale_fill_manual(name="FMP", values=fmp_colors, drop=F) +
   # Theme
   theme_bw() + base_theme +
-  theme(legend.position = c(0.65, 0.75),
+  theme(axis.title.x=element_blank(),,
+        legend.position = c(0.65, 0.72),
         legend.key.size = unit(0.05, "cm"),
         # legend.position="none",
         axis.text.y = element_text(angle = 90, hjust = 0.5))
 g3
+
+# Plot commercial landings
+g3b <- ggplot(comm, aes(x=year, y=prop_usd, fill=fmp)) +
+  geom_bar(stat="identity") +
+  # Axes
+  # Labels
+  labs(x="Year", y=" \nProportion", tag=" ") +
+  scale_x_continuous(breaks=seq(1980,2020,10)) +
+  scale_y_continuous(labels=scales::percent_format()) +
+  # Legend
+  scale_fill_manual(name="FMP", values=fmp_colors, drop=F) +
+  # Theme
+  theme_bw() + base_theme +
+  theme(legend.position = "none",
+        axis.text.y = element_text(angle = 90, hjust = 0.5))
+g3b
 
 # Plot number of species
 g4 <- ggplot(nspp, aes(x=year, y=nspp, fill=fmp)) +
@@ -191,18 +255,48 @@ g4 <- ggplot(nspp, aes(x=year, y=nspp, fill=fmp)) +
   scale_fill_manual(name="Taxa type", values=fmp_colors) +
   # Theme
   theme_bw() + base_theme +
-  theme(legend.position="none",
+  theme(axis.title.x=element_blank(),
+        legend.position="none",
         axis.text.y = element_text(angle = 90, hjust = 0.5))
 g4
 
+# Plot species richness
+g4b <- ggplot(nspp, aes(x=year, y=prop, fill=fmp)) +
+  geom_bar(stat="identity") +
+  geom_vline(xintercept = 2004.5, linetype="dashed", color="black", linewidth=0.2) +
+  # Labels
+  labs(x="Year", y="Proportion", tag=" ") +
+  scale_x_continuous(breaks=seq(1980,2020,10)) +
+  scale_y_continuous(labels=scales::percent_format()) +
+  # Legend
+  scale_fill_manual(name="FMP", values=fmp_colors, drop=F) +
+  # Theme
+  theme_bw() + base_theme +
+  theme(legend.position = "none",
+        axis.text.y = element_text(angle = 90, hjust = 0.5))
+g4b
+
 # Merge data
 x <- 0.15
-g <- gridExtra::grid.arrange(g1, g2, g3, g4, nrow=1, widths=c(x, rep((1-x)/3, 3)))
-
+g <- gridExtra::grid.arrange(g1, g2, g3, g4, 
+                             g1b, g2b, g3b, g4b, nrow=2, 
+                             widths=c(x, rep((1-x)/3, 3)),
+                             heights=c(0.6, 0.4))
 
 # Export
-ggsave(g, filename=file.path(plotdir, "Fig3_ca_landings_by_mgmt_catg.png"), 
-       width=6.5, height=2, units="in", dpi=600)
+ggsave(g, filename=file.path(plotdir, "Fig2_ca_landings_by_mgmt_catg.png"),
+       width=6.5, height=3, units="in", dpi=600)
+
+
+
+# # Merge data (no props)
+# x <- 0.15
+# g <- gridExtra::grid.arrange(g1, g2, g3, g4, nrow=1, widths=c(x, rep((1-x)/3, 3)))
+# 
+# 
+# # Export (no props)
+# ggsave(g, filename=file.path(plotdir, "Fig3_ca_landings_by_mgmt_catg.png"), 
+#        width=6.5, height=2, units="in", dpi=600)
 
 
 
@@ -346,3 +440,4 @@ g <- gridExtra::grid.arrange(g1, g2, g3)
 # Export
 ggsave(g, filename=file.path(plotdir, "FigSX_annual_landings_average.png"), 
        width=6.5, height=7.5, units="in", dpi=600)
+
