@@ -9,7 +9,8 @@ rm(list = ls())
 library(tidyverse)
 
 # Directories
-datadir <- "data/fish_species/allen"
+datadir <- "data/fish_species/raw/allen"
+outdir <- "data/fish_species_processed"
 
 # Read data
 data_orig <- readxl::read_excel(file.path(datadir, "California Marine SPCODEs_LAllen.xlsx"))
@@ -69,6 +70,7 @@ data <- data_orig %>%
                         "Xenertmus latifrons" = "Xeneretmus latifrons"))
 
 # Check scientific names
+# All correct: Bodianus pulcher Brachygenys californiensis Kyphosus azureus, Lampris megalopsis, Pseudobatos productus, Symphurus atricauda, Urobatis halleri 
 freeR::check_names(data$species)
 
 # Any duplicated?
@@ -89,7 +91,7 @@ data1 <- data %>%
   arrange(class, order, family, genus, species)
 
 # Export
-write.csv(data1, file=file.path(datadir, "ca_fish_species_temp.csv"), row.names=F)
+write.csv(data1, file=file.path(datadir, "Allen_ca_fish_species_temp.csv"), row.names=F)
   
   
   
@@ -97,7 +99,7 @@ write.csv(data1, file=file.path(datadir, "ca_fish_species_temp.csv"), row.names=
 # Format data
 ################################################################################
 
-data2 <- readxl::read_excel(file.path(datadir, "ca_fish_species_final.xlsx"))
+data2 <- readxl::read_excel(file.path(datadir, "Allen_ca_fish_species_final.xlsx"))
 
 stats_order <- data2 %>% 
   count(order)

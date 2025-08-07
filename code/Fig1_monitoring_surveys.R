@@ -12,6 +12,9 @@ library(taxize)
 # Directories
 plotdir <- "figures"
 
+# Read species
+spp <- readRDS("data/fish_species/processed/ca_finfish_species.Rds")
+
 # Read trawl survey footprint
 gbts_footprint <- readRDS("/Users/cfree/Dropbox/Chris/UCSB/projects/dcrab_multistressor/data/trawl_survey/processed/nwfsc_wcbts_grid_cells.Rds") %>% 
   sf::st_as_sf() %>% 

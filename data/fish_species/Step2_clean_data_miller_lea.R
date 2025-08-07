@@ -10,7 +10,7 @@ library(tidyverse)
 library(taxize)
 
 # Directories
-datadir <- "data/fish_species/miller_lea_1972"
+datadir <- "data/fish_species/raw/miller_lea_1972"
 
 # Read data
 data_orig <- readxl::read_excel(file.path(datadir, "Miller_Lea_1972_scientific_name_index.xlsx"), sheet=2)
