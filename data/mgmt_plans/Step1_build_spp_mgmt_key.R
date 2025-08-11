@@ -87,10 +87,7 @@ ca <- ca_orig %>%
                     "Red Abalone FMP" = "CDFW Red Abalone")) %>% 
   # Format species names
   mutate(species = recode(species,
-                          "Bodianus pulcher" = "",    
-                          "Clupea pallasii"  = "Clupea pallasii pallasii",     
-                          # "Metacarcinus anthonyi"  = "",
-                          # "Romaleon antennarium" = "",  
+                          "Clupea pallasii"  = "Clupea pallasii pallasii",   
                           "Seriola dorsalis"  = "Seriola lalandi")) %>% 
   # Remove federally managed species
   filter(!species %in% pfmc$species)
@@ -99,6 +96,7 @@ ca <- ca_orig %>%
 ca$species[ca$species %in% pfmc$species]
 
 # Check
+# Okay:Bodianus pulcher, Metacarcinus anthonyi, Romaleon antennarium 
 freeR::check_names(ca$species)
 
 # Merge data
@@ -111,6 +109,6 @@ count(data, fmp)
 
 # Export
 saveRDS(data, file=file.path(outdir, "spp_mgmt_key.Rds"))
-
+write.csv(data, file=file.path(outdir, "spp_mgmt_key.csv"))
 
 

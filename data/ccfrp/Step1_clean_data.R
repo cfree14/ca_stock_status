@@ -291,6 +291,21 @@ ggplot(surveys, aes(x=date, y=reorder(area, desc(area)), color=mpa_region)) +
 # Species coverage
 ################################################################################
 
+spp_obs <- data %>% 
+  filter(cpue_n_hr>0) %>% 
+  count(comm_name, sci_name)
+
+freeR::which_duplicated(spp_obs$comm_name)
+freeR::which_duplicated(spp_obs$sci_name)
+
+# Export
+write.csv(spp_obs, file=file.path(outdir, "ccfrp_species_all.csv"), row.names=F)
+
+
+# Species to include
+################################################################################
+
+
 # Total surveys
 nsurveys_tot <- data %>% 
   filter(mpa_region=="Central") %>% 

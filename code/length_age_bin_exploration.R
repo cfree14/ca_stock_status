@@ -9,25 +9,12 @@ rm(list = ls())
 library(tidyverse)
 
 # Directories
-datadir <- "data/fish_species/miller_lea_1972"
+datadir <- "data/merged"
+plotdir <- "figures"
 
-# Read data
-data <- read.csv(file.path(datadir, "ca_fish_species_miller_lea_1972.csv"), as.is=T)
-
-
-# Build data
-################################################################################
-
-# Stats
-stats <- data %>% 
-  count(class, order)
-
-n_distinct(data$species)
-n_distinct(data$genus)
-n_distinct(data$family)
-n_distinct(data$order)
-n_distinct(data$class)
-
+data <- readRDS(file=file.path(datadir, "species_key.Rds")) %>% 
+  mutate(age_bin=cut(tmax_yr, breaks=c(0,5,10, 20, 50, 100)),
+         length_bin=cut(linf_cm, breaks=c(0, 25, 50, 100, 200)))
 
 
 # Plot data
@@ -46,25 +33,33 @@ my_theme <-  theme(axis.text=element_text(size=8),
                    panel.background = element_blank(), 
                    axis.line = element_line(colour = "black"),
                    # Legend
-                   legend.position=c(0.75, 0.9),
-                   legend.key.size=unit(0.3, "cm"),
+                   legend.position = c(0.8, 0.7),
                    legend.key = element_rect(fill = NA, color=NA),
                    legend.background = element_rect(fill=alpha('blue', 0)))
 
-# Plot data
-g <- ggplot(stats, aes(x=n, y=reorder(order, desc(n)), fill=class)) +
-  geom_bar(stat="identity") + 
+g1 <- ggplot(data, aes(x=tmax_yr, fill=age_bin)) +
+  geom_histogram(breaks=seq(0,100,5), closed="left") +
+  # geom_vline(xintercept = c(5,10,20,50)) +
   # Labels
-  labs(x="Number of species", y="") +
+  labs(x="Maximum age (yr)", y="Number of species") +
   # Legend
-  scale_fill_ordinal(name="Class") +
+  scale_fill_discrete(name="Age bin") +
   # Theme
   theme_bw() + my_theme
-g
+g1
 
-# Export
-ggsave(g, filename=file.path(datadir, "FigX_ca_fish_species.png"), 
-       width=4.5, height=5.5, units="in", dpi=600)
+g2 <- ggplot(data, aes(x=linf_cm, fill=length_bin)) +
+  geom_histogram(breaks=seq(0, 200, 5), closed="left") +
+  # geom_vline(xintercept = c(5,10,20,50)) +
+  # Labels
+  labs(x="Asymptotic length (yr)", y="Number of species") +
+  # Legend
+  scale_fill_discrete(name="Length bin") +
+  # Theme
+  theme_bw() + my_theme
+g2
+
+g <- gridExtra::grid.arrange(g1, g2, ncol=2)
 
 
 

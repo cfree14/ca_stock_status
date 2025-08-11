@@ -21,7 +21,8 @@ data_orig <- readRDS(file=file.path(datadir, "abundance_index_stats.Rds"))
 stocks_orig <- readRDS("data/stock_smart/processed/stock_smart_stocks_use.Rds")
 
 # Get species traits
-spp_key <- readRDS(file=file.path(datadir, "species_key.Rds"))
+spp_key <- readRDS(file=file.path(datadir, "species_key.Rds")) %>% 
+  mutate(harvested_yn=ifelse(landings_lbs>=1000, "Harvested", "Not harvested"))
 
 
 # Build data
@@ -70,7 +71,7 @@ data <- data_orig %>%
                              "SCUBA"="6") %>% as.numeric(),
          dataset=factor(dataset, levels=c("StockSMART", "GBTS", "CalCOFI", "RREAS", "CCFRP", "SCUBA"))) %>%
   # Add species key
-  left_join(spp_key %>% select(sci_name, class, order, family, tl_long, habitat, assessed_yn, managed_yn, tmax_yr, linf_cm), by="sci_name")
+  left_join(spp_key %>% select(sci_name, class, order, family, tl_long, habitat, assessed_yn, managed_yn, harvested_yn, tmax_yr, linf_cm), by="sci_name")
 
 # Inspect
 freeR::complete(data)

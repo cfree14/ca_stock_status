@@ -227,6 +227,15 @@ table(data$surge)
 saveRDS(data, file=file.path(outdir, "scuba_data.Rds"))
 
 
+# Species in data
+################################################################################
+
+spp_obs <- data %>% 
+  filter(count>0) %>% 
+  count(comm_name, sci_name)
+
+write.csv(spp_obs, file=file.path(outdir, "scuba_species_with_data.csv"))
+
 # Transect key
 ################################################################################
 

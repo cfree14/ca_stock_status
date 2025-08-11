@@ -134,6 +134,8 @@ freeR::which_duplicated(spp_key$sci_name)
 # Check species names
 freeR::check_names(spp_key$sci_name[spp_key$level=="species"])
 
+# Export
+write.csv(spp_key, file=file.path(outdir, "gbts_species_key_but_needs_much_work.csv"), row.names = F)
 
 
 

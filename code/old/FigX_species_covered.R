@@ -21,7 +21,7 @@ scuba_orig <- readRDS("data/kelp_scuba/processed/scuba_species_to_evaluate.Rds")
 ccfrp_orig <- readRDS("data/ccfrp/processed/CCFRP_species_to_evaluate.Rds")
 
 # Read
-spp_list <- read.csv("data/fish_species/miller_lea_1972/ca_fish_species_miller_lea_1972.csv")
+spp_list <- read.csv("data/fish_species/raw/miller_lea_1972/ca_fish_species_miller_lea_1972.csv")
 
 
 # Build data
