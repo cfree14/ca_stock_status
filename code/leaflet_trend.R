@@ -93,6 +93,12 @@ ram_sum_extended <- expand.grid(comm_name=unique(ram_sum$comm_name),
          ffmsy_avg=median(ffmsy, na.rm=T)) %>% # NOT AVERGE!!!!! CHANGE WHEN FIXING CRAZY THRESHER RESULTS
   ungroup()
 
+ram_sum_extended_simp <- ram_sum_extended %>% 
+  group_by(year) %>% 
+  summarize(bbmsy_avg=mean(bbmsy, na.rm=T),
+            bbmsy_lo=quantile(bbmsy, prob=0.025, na.rm=T),
+            bbmsy_hi=quantile(bbmsy, prob=0.975, na.rm=T)) %>% 
+  ungroup()
 
 # Plot data
 ################################################################################
@@ -145,6 +151,40 @@ g2
 
 # Export
 ggsave(g2, filename=file.path(plotdir, "leaflet_trend.png"), 
+       width=5, height=2.75, units="in", dpi=600)
+
+
+# Plot BBMSY boxplot 
+g2 <- ggplot(ram_sum_extended_simp, aes(x=year, y=bbmsy_avg)) +
+  # geom_ribbon(mapping=aes(ymin=bbmsy_lo, ymax=bbmsy_hi), fill="grey80") +
+  geom_line(linewidth=1, color="blue") +
+  # Reference line
+  geom_hline(yintercept=1, linewidth=0.3) +
+  geom_hline(yintercept=0.5, linewidth=0.3, color="red", linetype="dashed") +
+  # Limits
+  lims(y=c(0,2)) +
+  scale_x_continuous(breaks=seq(1980,2020, 5), lim=c(1979.5, NA)) +
+  # Labels
+  annotate(geom="text", x=2010, y=1.08, hjust=0, size=2.1,
+           label="Above target abundance") +
+  annotate(geom="text", x=2010, y=0.92, hjust=0, size=2.1,
+           label="Below target abundance") +
+  annotate(geom="text", x=2010, y=0.42, hjust=0, size=2.1,
+           label="Overfished", color="red") +
+  # Legend
+  scale_fill_gradientn(name="Average",
+                       colors=RColorBrewer::brewer.pal(9, "Blues")) +
+  guides(fill = guide_colorbar(ticks.colour = "black", frame.colour = "black", frame.linewidth = 0.2)) + # title.position="top", title.hjust = 0.5)
+  # Labels
+  labs(x="Year", y="Abundance relative\nto target abundance", tag="",
+       title="Status of 45 important fishery species over time") +
+  # Theme
+  theme_bw() + my_theme + 
+  theme(legend.position = "none")
+g2
+
+# Export
+ggsave(g2, filename=file.path(plotdir, "leaflet_trend_line.png"), 
        width=5, height=2.75, units="in", dpi=600)
  
 

@@ -84,7 +84,36 @@ stats <- data %>%
 surveys <- c("StockSMART", "GBTS", "CalCOFI", "RREAS", "CCFRP", "SCUBA", "Some data", "No data")
 survey_colors <- c( "#A65628", "#FF7F00", "#377EB8", "#E41A1C", "#4DAF4A", "#984EA3", "grey60", "grey90")                 
 
-# Build data
+
+# Manuscript stats
+################################################################################
+
+# Which orders are 100% no data
+orders_none <- stats %>% 
+  filter(prop==1 & status=="No data") %>% 
+  arrange(desc(n)) %>% 
+  pull(order) %>% sort()
+
+orders_insuff <- stats %>% 
+  filter(status %in% c("No data", "Insufficient data")) %>% 
+  group_by(order) %>% 
+  summarize(prop=sum(prop)) %>% 
+  ungroup() %>% 
+  filter(prop==1 & !order%in%orders_none) %>% 
+  pull(order) %>% sort()
+
+
+orders_rep <- stats %>% 
+  filter(!status %in% c("No data", "Insufficient data")) %>% 
+  group_by(order) %>% 
+  summarize(prop=sum(prop),
+            nspp=sum(n)) %>% 
+  ungroup() %>% 
+  filter(nspp>=5) %>% 
+  arrange(desc(prop))
+  
+
+# Plot data
 ################################################################################
 
 # Theme
