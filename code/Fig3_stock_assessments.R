@@ -47,6 +47,9 @@ nrow(stocks)
 sum(stocks$b_bmsy>=1 & stocks$f_fmsy<=1)
 sum(stocks$b_bmsy>=0.5 & stocks$f_fmsy<=1)
 
+# Number of species
+n_distinct(stocks$sci_name)
+freeR::which_duplicated(stocks$sci_name)
 
 # RAM
 ##############################

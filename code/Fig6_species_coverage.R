@@ -14,8 +14,7 @@ outdir <- "output"
 
 # Read list of all species in California
 spp_all <- readRDS("data/fish_species/processed/ca_finfish_species.Rds") 
-# spp_do <- missing!
-
+spp_do <- readRDS(file=file.path(outdir, "species_in_report_card.Rds"))
 
 
 # Build data
