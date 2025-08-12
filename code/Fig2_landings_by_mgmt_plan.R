@@ -63,6 +63,10 @@ ggplot(rec, aes(x=year, y=landings_mt, fill=fmp)) +
 comm <- comm_orig %>% 
   # Reduce to finfish
   filter(state=="California" & type=="fish") %>% 
+  # Correct some scientific names
+  mutate(sci_name=recode(sci_name, 
+                         "Semicossyphus pulcher"="Bodianus pulcher",
+                         "Beringraja stellulata" = "Caliraja stellulata")) %>% 
   # Add mgmt data
   left_join(mgmt_key %>% select(species, authority, fmp), by=c("sci_name_nom"="species")) %>% 
   # Summarize
@@ -135,6 +139,8 @@ base_theme <- theme(axis.text=element_text(size=5.5),
                     panel.grid.minor = element_blank(),
                     panel.background = element_blank(), 
                     axis.line = element_line(colour = "black"),
+                    # Margin
+                    plot.margin = margin(1,1,1,1),
                     # Legend
                     legend.key = element_rect(fill = NA, color=NA),
                     legend.background = element_rect(fill=alpha('blue', 0)))
@@ -221,8 +227,8 @@ g3 <- ggplot(comm, aes(x=year, y=value_usd/1e6, fill=fmp)) +
   # Theme
   theme_bw() + base_theme +
   theme(axis.title.x=element_blank(),,
-        legend.position = c(0.65, 0.72),
-        legend.key.size = unit(0.05, "cm"),
+        legend.position = c(0.62, 0.72),
+        legend.key.size = unit(0.2, "cm"),
         # legend.position="none",
         axis.text.y = element_text(angle = 90, hjust = 0.5))
 g3

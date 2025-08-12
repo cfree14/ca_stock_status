@@ -108,6 +108,8 @@ my_theme <-  theme(axis.text=element_text(size=7),
                    strip.text=element_text(size=7),
                    plot.title=element_text(size=8),
                    plot.tag=element_text(size=9),
+                   # Margin
+                   plot.margin = margin(1, 1, 1, 4),
                    # Gridlines
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -131,7 +133,7 @@ g1 <- ggplot(stocks, aes(x=b_bmsy, y=f_fmsy, fill=last_data_year)) +
   #                          mapping=aes(x=b_bmsy, y=f_fmsy, label=stock)) +
   geom_text(data=stocks_label, 
            mapping=aes(x=b_bmsy, y=f_fmsy, label=stock),
-           hjust=-0.1, size=2.0) +
+           hjust=-0.1, size=2.4) +
   # Labels
   labs(x=expression("B / B"["MSY"]), 
        y=expression("F / F"["MSY"]),
@@ -144,7 +146,7 @@ g1 <- ggplot(stocks, aes(x=b_bmsy, y=f_fmsy, fill=last_data_year)) +
   scale_y_continuous(lim=c(0, NA)) +
   # Theme
   theme_bw() + my_theme +
-  theme(legend.position = c(0.9,  0.8))
+  theme(legend.position = c(0.85,  0.84))
 g1
 
 # Plot BBMSY boxplot 
